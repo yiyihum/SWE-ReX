@@ -2,17 +2,16 @@
 
 import time
 from local import AbstractRuntime
-from models import CreateShellResponse, Observation, Action, CloseRequest, CreateShellRequest
+from models import CloseResponse, CreateShellResponse, Observation, Action, CloseRequest, CreateShellRequest
 import pexpect
 
 
 class Session:
     def __init__(self):
-        pass
+        self._ps1= "SHELLPS1PREFIX"
+        self.shell = None
 
     def start(self) -> CreateShellResponse:
-        print("Session created")
-        self._ps1= "SHELLPS1PREFIX"
         self.shell = pexpect.spawn(
             '/bin/bash',
             encoding='utf-8',
@@ -20,26 +19,42 @@ class Session:
         )
         time.sleep(0.1)
         self.shell.sendline("echo 'fully_initialized'")
-        self.shell.expect("fully_initialized", timeout=1)
+        try:
+            self.shell.expect("fully_initialized", timeout=1)
+        except pexpect.TIMEOUT:
+            return CreateShellResponse(success=False, failure_reason="timeout while initializing shell")
         output = self.shell.before
         self.shell.sendline(f"umask 002; export PS1='{self._ps1}'; export PS2=''")
-        self.shell.expect(self._ps1)
+        try:
+            self.shell.expect(self._ps1, timeout=1)
+        except pexpect.TIMEOUT:
+            return CreateShellResponse(success=False, failure_reason="timeout while setting PS1")
         output += "\n---\n" + self.shell.before  # type: ignore
         return CreateShellResponse(output=output)
     
     def run(self, action: Action) -> Observation:
-        print(f"Running command: {action.command!r}")
+        if self.shell is None:
+            return Observation(output="", exit_code_raw="-300", failure_reason="shell not initialized")
         self.shell.sendline(action.command)
-        self.shell.expect(self._ps1, timeout=action.timeout)
+        try:
+            self.shell.expect(self._ps1, timeout=action.timeout)
+        except pexpect.TIMEOUT:
+            return Observation(output="", exit_code_raw="-100", failure_reason="timeout while running command")
         output: str = self.shell.before  # type: ignore
         self.shell.sendline('echo $?')
-        self.shell.expect(self._ps1)
+        try:
+            self.shell.expect(self._ps1)
+        except pexpect.TIMEOUT:
+            return Observation(output="", exit_code_raw="-200", failure_reason="timeout while getting exit code")
         exit_code_raw: str = self.shell.before  # type: ignore
-        print('after', self.shell.after)
         return Observation(output=output, exit_code_raw=exit_code_raw)
     
-    def close(self):
-        print("Session closed")
+    def close(self) -> CloseResponse:
+        if self.shell is None:
+            return CloseResponse()
+        self.shell.close()
+        self.shell = None
+        return CloseResponse()
 
 
 class Runtime(AbstractRuntime):
@@ -55,6 +70,7 @@ class Runtime(AbstractRuntime):
     def run(self, action: Action) -> Observation:
         return self.sessions[action.session].run(action)
     
-    def close(self, request: CloseRequest):
-        self.sessions[request.session].close()
+    def close(self, request: CloseRequest) -> CloseResponse:
+        out = self.sessions[request.session].close()
         del self.sessions[request.session]
+        return out

@@ -17,16 +17,13 @@ async def root():
 
 @app.post("/create_shell")
 async def create_shell(request: CreateShellRequest):
-    obs = runtime.create_shell(request)
-    return obs.model_dump()
+    return runtime.create_shell(request).model_dump()
 
 @app.post("/run")
 async def run(action: Action):
-    obs = runtime.run(action)
-    return obs.model_dump()
+    return runtime.run(action).model_dump()
 
 
 @app.post("/close")
 async def close(request: CloseRequest):
-    runtime.close(request)
-    return {"message": "shell closed"}
+    return runtime.close(request).model_dump()

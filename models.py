@@ -3,6 +3,7 @@ from pydantic import BaseModel
 class Observation(BaseModel):
     output: str
     exit_code_raw: str = ""
+    failure_reason: str = ""
 
     @property
     def exit_code(self) -> int:
@@ -21,7 +22,9 @@ class CreateShellRequest(BaseModel):
 
 
 class CreateShellResponse(BaseModel):
-    output: str
+    success: bool = True
+    failure_reason: str = ""
+    output: str = ""
 
 
 class Action(BaseModel):
@@ -32,3 +35,7 @@ class Action(BaseModel):
 
 class CloseRequest(BaseModel):
     session: str = "default"
+
+
+class CloseResponse(BaseModel):
+    ...

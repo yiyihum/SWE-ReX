@@ -55,4 +55,5 @@ if __name__ == "__main__":
     print(runtime.create_shell(CreateShellRequest()))
     print(runtime.run(Action(command="echo 'this is a test'")))
     print(runtime.run(Action(command="doesntexit")))
+    print(runtime.run(Action(command="sleep 2", timeout=1)))
     print(runtime.close(CloseRequest()))
