@@ -9,7 +9,7 @@ from models import Action, CloseRequest, CloseResponse, CreateShellRequest, Crea
 class Session:
     def __init__(self):
         self._ps1 = "SHELLPS1PREFIX"
-        self.shell = None
+        self.shell: pexpect.spawn | None = None
 
     def start(self) -> CreateShellResponse:
         self.shell = pexpect.spawn(
@@ -37,17 +37,39 @@ class Session:
             return Observation(output="", exit_code_raw="-300", failure_reason="shell not initialized")
         self.shell.sendline(action.command)
         try:
-            self.shell.expect(self._ps1, timeout=action.timeout)
+            expect_strings = action.expect + [self._ps1]
+            expect_index = self.shell.expect(expect_strings, timeout=action.timeout)  # type: ignore
+            expect_string = expect_strings[expect_index]
         except pexpect.TIMEOUT:
+            expect_string = ""
             return Observation(output="", exit_code_raw="-100", failure_reason="timeout while running command")
         output: str = self.shell.before  # type: ignore
-        self.shell.sendline("echo $?")
-        try:
-            self.shell.expect(self._ps1)
-        except pexpect.TIMEOUT:
-            return Observation(output="", exit_code_raw="-200", failure_reason="timeout while getting exit code")
-        exit_code_raw: str = self.shell.before  # type: ignore
-        return Observation(output=output, exit_code_raw=exit_code_raw)
+        if not action.is_interactive_command and not action.is_interactive_quit:
+            self.shell.sendline("\necho $?")
+            try:
+                self.shell.expect(self._ps1, timeout=1)
+            except pexpect.TIMEOUT:
+                return Observation(output="", exit_code_raw="-200", failure_reason="timeout while getting exit code")
+            exit_code_raw: str = self.shell.before.strip()  # type: ignore
+            if not exit_code_raw.strip():
+                # This happens sometimes after quitting an interactive session.
+                print("exit_code_raw was empty, trying again")
+                self.shell.expect(self._ps1, timeout=1)
+                exit_code_raw = self.shell.before.strip()  # type: ignore
+        elif action.is_interactive_quit:
+            assert not action.is_interactive_command
+            exit_code_raw = "0"
+            self.shell.setecho(False)
+            self.shell.waitnoecho()
+            self.shell.sendline("stty -echo; echo 'doneremovingecho'; echo 'doneremovingecho'")
+            # Might need two expects for some reason
+            print(self.shell.expect("doneremovingecho", timeout=1))
+            print(self.shell.expect(self._ps1, timeout=1))
+        else:
+            # Trouble with echo mode within an interactive session that we
+            output = output.lstrip().removeprefix(action.command).strip()
+            exit_code_raw = "0"
+        return Observation(output=output, exit_code_raw=exit_code_raw, expect_string=expect_string)
 
     def close(self) -> CloseResponse:
         if self.shell is None:
