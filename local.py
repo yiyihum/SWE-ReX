@@ -52,6 +52,7 @@ class RemoteRuntime(AbstractRuntime):
 if __name__ == "__main__":
     runtime = RemoteRuntime("localhost:8000")
     print(runtime.is_alive())
-    print(runtime.create_shell(CreateShellRequest(name="test")))
-    print(runtime.run(Action(command="ls -l", session="test")))
-    print(runtime.close(CloseRequest(session="test")))
+    print(runtime.create_shell(CreateShellRequest()))
+    print(runtime.run(Action(command="echo 'this is a test'")))
+    print(runtime.run(Action(command="doesntexit")))
+    print(runtime.close(CloseRequest()))

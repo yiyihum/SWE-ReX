@@ -17,8 +17,8 @@ async def root():
 
 @app.post("/create_shell")
 async def create_shell(request: CreateShellRequest):
-    runtime.create_shell(request)
-    return {"message": "shell created"}
+    obs = runtime.create_shell(request)
+    return obs.model_dump()
 
 @app.post("/run")
 async def run(action: Action):

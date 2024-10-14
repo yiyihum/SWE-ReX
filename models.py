@@ -2,22 +2,33 @@ from pydantic import BaseModel
 
 class Observation(BaseModel):
     output: str
-    error: str = ""
-    exit_code: int = 0
+    exit_code_raw: str = ""
+
+    @property
+    def exit_code(self) -> int:
+        try:
+            return int(self.exit_code_raw)
+        except ValueError:
+            return -1
+    
+    @property
+    def success(self) -> bool:
+        return self.exit_code == 0
 
 
 class CreateShellRequest(BaseModel):
-    name: str
+    name: str = "default"
 
 
 class CreateShellResponse(BaseModel):
-    ...
+    output: str
 
 
 class Action(BaseModel):
     command: str
-    session: str
+    session: str = "default"
+    timeout: float|None = None
 
 
 class CloseRequest(BaseModel):
-    session: str
+    session: str = "default"
