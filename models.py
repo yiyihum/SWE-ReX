@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+
 class Observation(BaseModel):
     output: str
     exit_code_raw: str = ""
@@ -11,7 +12,7 @@ class Observation(BaseModel):
             return int(self.exit_code_raw)
         except ValueError:
             return -1
-    
+
     @property
     def success(self) -> bool:
         return self.exit_code == 0
@@ -30,12 +31,11 @@ class CreateShellResponse(BaseModel):
 class Action(BaseModel):
     command: str
     session: str = "default"
-    timeout: float|None = None
+    timeout: float | None = None
 
 
 class CloseRequest(BaseModel):
     session: str = "default"
 
 
-class CloseResponse(BaseModel):
-    ...
+class CloseResponse(BaseModel): ...

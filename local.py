@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from abc import ABC, abstractmethod
+
 import requests
 
 from models import Action, CloseRequest, CreateShellRequest, CreateShellResponse, Observation
@@ -32,7 +33,7 @@ class RemoteRuntime(AbstractRuntime):
             return False
         except requests.RequestException:
             return False
-    
+
     def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
         response = requests.post(f"http://{self.host}/create_shell", json=request.model_dump())
         response.raise_for_status()
@@ -42,7 +43,7 @@ class RemoteRuntime(AbstractRuntime):
         response = requests.post(f"http://{self.host}/run", json=action.model_dump())
         response.raise_for_status()
         return Observation(**response.json())
-    
+
     def close(self, request: CloseRequest):
         response = requests.post(f"http://{self.host}/close", json=request.model_dump())
         response.raise_for_status()
