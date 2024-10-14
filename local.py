@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 import requests
 
-from models import Action, CloseRequest, CreateShellRequest, CreateShellResponse, Observation
+from models import Action, CloseRequest, CloseResponse, CreateShellRequest, CreateShellResponse, Observation
 
 
 class AbstractRuntime(ABC):
@@ -49,10 +49,10 @@ class RemoteRuntime(AbstractRuntime):
             print(f"Command failed: {obs.failure_reason}")
         return obs
 
-    def close(self, request: CloseRequest):
+    def close(self, request: CloseRequest) -> CloseResponse:
         response = requests.post(f"http://{self.host}/close", json=request.model_dump())
         response.raise_for_status()
-        return response.json()
+        return CloseResponse(**response.json())
 
 
 if __name__ == "__main__":
@@ -69,6 +69,7 @@ if __name__ == "__main__":
     print(runtime.run(Action(command="python", is_interactive_command=True, expect=[">>> "])))
     print(runtime.run(Action(command="print('hello world')", is_interactive_command=True, expect=[">>> "])))
     print(runtime.run(Action(command="quit()\n", is_interactive_quit=True)))
+    print( runtime.run( Action( command="touch test && ls",)))
     print( runtime.run( Action( command="doesnexist",)))
     print(runtime.close(CloseRequest()))
     # fmt: on

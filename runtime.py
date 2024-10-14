@@ -8,6 +8,10 @@ from models import Action, CloseRequest, CloseResponse, CreateShellRequest, Crea
 
 class Session:
     def __init__(self):
+        """This basically represents one REPL that we control.
+
+        It's pretty similar to a `pexpect.REPLWrapper`.
+        """
         self._ps1 = "SHELLPS1PREFIX"
         self.shell: pexpect.spawn | None = None
 
@@ -51,8 +55,10 @@ class Session:
             except pexpect.TIMEOUT:
                 return Observation(output="", exit_code_raw="-200", failure_reason="timeout while getting exit code")
             exit_code_raw: str = self.shell.before.strip()  # type: ignore
+            # After quitting an interactive session, for some reason we oftentimes get double
+            # PS1 for all following commands. So we might need to call expect again.
+            # Alternatively we could have probably called `echo <<<$?>>>` or something.
             if not exit_code_raw.strip():
-                # This happens sometimes after quitting an interactive session.
                 print("exit_code_raw was empty, trying again")
                 self.shell.expect(self._ps1, timeout=1)
                 exit_code_raw = self.shell.before.strip()  # type: ignore
@@ -81,6 +87,10 @@ class Session:
 
 class Runtime(AbstractRuntime):
     def __init__(self):
+        """This is the main entry point for the runtime.
+
+        It keeps track of all the sessions (individual repls) that are currently open.
+        """
         self.sessions: dict[str, Session] = {}
 
     def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
