@@ -52,4 +52,6 @@ class CloseRequest(BaseModel):
     session: str = "default"
 
 
-class CloseResponse(BaseModel): ...
+class CloseResponse(BaseModel):
+    success: bool = True
+    failure_reason: str = ""

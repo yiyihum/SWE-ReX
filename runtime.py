@@ -94,15 +94,20 @@ class Runtime(AbstractRuntime):
         self.sessions: dict[str, Session] = {}
 
     def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
-        assert request.name not in self.sessions
+        if request.name in self.sessions:
+            return CreateShellResponse(success=False, failure_reason="session already exists")
         shell = Session()
         self.sessions[request.name] = shell
         return shell.start()
 
     def run(self, action: Action) -> Observation:
+        if action.session not in self.sessions:
+            return Observation(output="", exit_code_raw="-312", failure_reason="session does not exist")
         return self.sessions[action.session].run(action)
 
     def close(self, request: CloseRequest) -> CloseResponse:
+        if request.session not in self.sessions:
+            return CloseResponse(success=False, failure_reason="session does not exist")
         out = self.sessions[request.session].close()
         del self.sessions[request.session]
         return out
