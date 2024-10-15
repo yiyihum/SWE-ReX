@@ -1,9 +1,19 @@
+import subprocess
 import time
 
 import pexpect
 
 from local import AbstractRuntime
-from models import Action, CloseRequest, CloseResponse, CreateShellRequest, CreateShellResponse, Observation
+from models import (
+    Action,
+    CloseRequest,
+    CloseResponse,
+    Command,
+    CommandResponse,
+    CreateShellRequest,
+    CreateShellResponse,
+    Observation,
+)
 
 
 class Session:
@@ -94,6 +104,7 @@ class Runtime(AbstractRuntime):
         self.sessions: dict[str, Session] = {}
 
     async def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
+        """Creates a new shell session."""
         if request.name in self.sessions:
             return CreateShellResponse(success=False, failure_reason="session already exists")
         shell = Session()
@@ -101,13 +112,29 @@ class Runtime(AbstractRuntime):
         return await shell.start()
 
     async def run_in_shell(self, action: Action) -> Observation:
+        """Runs a command in a shell session."""
         if action.session not in self.sessions:
             return Observation(output="", exit_code_raw="-312", failure_reason="session does not exist")
         return await self.sessions[action.session].run(action)
 
     async def close_shell(self, request: CloseRequest) -> CloseResponse:
+        """Closes a shell session."""
         if request.session not in self.sessions:
             return CloseResponse(success=False, failure_reason="session does not exist")
         out = await self.sessions[request.session].close()
         del self.sessions[request.session]
         return out
+
+    async def execute(self, command: Command) -> CommandResponse:
+        """Executes a command (independent of any shell session)."""
+        try:
+            result = subprocess.run(command.command, shell=command.shell, timeout=command.timeout, capture_output=True)
+            return CommandResponse(
+                stdout=result.stdout.decode(errors="backslashreplace"),
+                stderr=result.stderr.decode(errors="backslashreplace"),
+                exit_code=result.returncode,
+            )
+        except subprocess.TimeoutExpired:
+            return CommandResponse(stdout="", stderr="", exit_code=-1)
+        except Exception as e:
+            return CommandResponse(stdout="", stderr=str(e), exit_code=-2)

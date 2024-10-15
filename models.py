@@ -55,3 +55,19 @@ class CloseRequest(BaseModel):
 class CloseResponse(BaseModel):
     success: bool = True
     failure_reason: str = ""
+
+
+class Command(BaseModel):
+    command: str
+    timeout: float | None = None
+    shell: bool = False
+
+
+class CommandResponse(BaseModel):
+    stdout: str
+    stderr: str
+    exit_code: int
+
+    @property
+    def success(self) -> bool:
+        return self.exit_code == 0

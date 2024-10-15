@@ -3,7 +3,7 @@
 
 from fastapi import FastAPI
 
-from models import Action, CloseRequest, CreateShellRequest
+from models import Action, CloseRequest, Command, CreateShellRequest
 from runtime import Runtime
 
 app = FastAPI()
@@ -28,3 +28,8 @@ async def run(action: Action):
 @app.post("/close_shell")
 async def close(request: CloseRequest):
     return (await runtime.close_shell(request)).model_dump()
+
+
+@app.post("/execute")
+async def execute(command: Command):
+    return (await runtime.execute(command)).model_dump()
