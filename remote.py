@@ -17,13 +17,14 @@ async def root():
 
 @app.post("/create_shell")
 async def create_shell(request: CreateShellRequest):
-    return runtime.create_shell(request).model_dump()
+    return (await runtime.create_shell(request)).model_dump()
+
 
 @app.post("/run")
 async def run(action: Action):
-    return runtime.run(action).model_dump()
+    return (await runtime.run(action)).model_dump()
 
 
 @app.post("/close")
 async def close(request: CloseRequest):
-    return runtime.close(request).model_dump()
+    return (await runtime.close(request)).model_dump()

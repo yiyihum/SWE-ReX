@@ -15,7 +15,7 @@ class Session:
         self._ps1 = "SHELLPS1PREFIX"
         self.shell: pexpect.spawn | None = None
 
-    def start(self) -> CreateShellResponse:
+    async def start(self) -> CreateShellResponse:
         self.shell = pexpect.spawn(
             "/bin/bash",
             encoding="utf-8",
@@ -36,7 +36,7 @@ class Session:
         output += "\n---\n" + self.shell.before  # type: ignore
         return CreateShellResponse(output=output)
 
-    def run(self, action: Action) -> Observation:
+    async def run(self, action: Action) -> Observation:
         if self.shell is None:
             return Observation(output="", exit_code_raw="-300", failure_reason="shell not initialized")
         self.shell.sendline(action.command)
@@ -77,7 +77,7 @@ class Session:
             exit_code_raw = "0"
         return Observation(output=output, exit_code_raw=exit_code_raw, expect_string=expect_string)
 
-    def close(self) -> CloseResponse:
+    async def close(self) -> CloseResponse:
         if self.shell is None:
             return CloseResponse()
         self.shell.close()
@@ -93,21 +93,21 @@ class Runtime(AbstractRuntime):
         """
         self.sessions: dict[str, Session] = {}
 
-    def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
+    async def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
         if request.name in self.sessions:
             return CreateShellResponse(success=False, failure_reason="session already exists")
         shell = Session()
         self.sessions[request.name] = shell
-        return shell.start()
+        return await shell.start()
 
-    def run(self, action: Action) -> Observation:
+    async def run(self, action: Action) -> Observation:
         if action.session not in self.sessions:
             return Observation(output="", exit_code_raw="-312", failure_reason="session does not exist")
-        return self.sessions[action.session].run(action)
+        return await self.sessions[action.session].run(action)
 
-    def close(self, request: CloseRequest) -> CloseResponse:
+    async def close(self, request: CloseRequest) -> CloseResponse:
         if request.session not in self.sessions:
             return CloseResponse(success=False, failure_reason="session does not exist")
-        out = self.sessions[request.session].close()
+        out = await self.sessions[request.session].close()
         del self.sessions[request.session]
         return out
