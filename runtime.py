@@ -100,12 +100,12 @@ class Runtime(AbstractRuntime):
         self.sessions[request.name] = shell
         return await shell.start()
 
-    async def run(self, action: Action) -> Observation:
+    async def run_in_shell(self, action: Action) -> Observation:
         if action.session not in self.sessions:
             return Observation(output="", exit_code_raw="-312", failure_reason="session does not exist")
         return await self.sessions[action.session].run(action)
 
-    async def close(self, request: CloseRequest) -> CloseResponse:
+    async def close_shell(self, request: CloseRequest) -> CloseResponse:
         if request.session not in self.sessions:
             return CloseResponse(success=False, failure_reason="session does not exist")
         out = await self.sessions[request.session].close()
