@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from swebridge.local import RemoteRuntime
-from swebridge.models import (
+from swerex.local import RemoteRuntime
+from swerex.models import (
     Action,
     CloseRequest,
     CreateShellRequest,

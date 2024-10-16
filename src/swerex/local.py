@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 import requests
 
-from swebridge.models import (
+from swerex.models import (
     Action,
     CloseRequest,
     CloseResponse,

@@ -4,7 +4,7 @@ import argparse
 
 from fastapi import FastAPI
 
-from swebridge.models import (
+from swerex.models import (
     Action,
     CloseRequest,
     Command,
@@ -12,7 +12,7 @@ from swebridge.models import (
     ReadFileRequest,
     WriteFileRequest,
 )
-from swebridge.runtime import Runtime
+from swerex.runtime import Runtime
 
 app = FastAPI()
 runtime = Runtime()

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pexpect
 
-from swebridge.local import AbstractRuntime
-from swebridge.models import (
+from swerex.local import AbstractRuntime
+from swerex.models import (
     Action,
     CloseRequest,
     CloseResponse,

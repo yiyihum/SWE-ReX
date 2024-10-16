@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"  # If not defined, then legacy behavior 
 
 
 [project]
-name = "swebridge"
+name = "swerex"
 dynamic = ["version",]
 description = ""
 readme = "README.md"
@@ -50,7 +50,7 @@ dev = [
 include-package-data = true
 
 [tool.setuptools.dynamic]
-version = {attr = "swebridge.__version__"}
+version = {attr = "swerex.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -63,7 +63,7 @@ namespaces = false
 # "Source" = "http://github.com/princeton-nlp/SWE-agent"
 
 [project.scripts]
-swebridge-remote = "swebridge.remote:main"
+swerex-remote = "swerex.remote:main"
 
 [tool.pytest.ini_options]
 markers = [
