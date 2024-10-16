@@ -13,7 +13,7 @@ pip install -e .
 First, start server:
 
 ```
-swebridge-remote
+swerex-remote
 ```
 
 Then, in another terminal, run the client:
