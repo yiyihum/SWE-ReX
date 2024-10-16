@@ -6,16 +6,22 @@
 * `remote.py`: The server that serves results from the runtime
 * `local.py`: The client that sends requests to the server
 
+## Install
+
+```
+pip install -e .
+```
+
 ## Running it
 
 First, start server:
 
 ```
-fastapi dev remote.py
+swebridge-remote
 ```
 
 Then, in another terminal, run the client:
 
 ```
-./local.py
+./examples/examples.py
 ```

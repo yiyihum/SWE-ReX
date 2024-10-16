@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import traceback
 from abc import ABC, abstractmethod
 
 import requests
@@ -63,22 +64,24 @@ class RemoteRuntime(AbstractRuntime):
 
     def is_alive(self) -> bool:
         try:
-            response = requests.get(f"http://{self.host}")
+            response = requests.get(f"{self.host}")
             if response.status_code == 200 and response.json().get("message") == "running":
                 return True
             return False
         except requests.RequestException:
+            print(f"Failed to connect to {self.host}")
+            print(traceback.format_exc())
             return False
 
     def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
-        response = requests.post(f"http://{self.host}/create_shell", json=request.model_dump())
+        response = requests.post(f"{self.host}/create_shell", json=request.model_dump())
         response.raise_for_status()
         return CreateShellResponse(**response.json())
 
     def run_in_shell(self, action: Action) -> Observation:
         print("----")
         print(action)
-        response = requests.post(f"http://{self.host}/run_in_shell", json=action.model_dump())
+        response = requests.post(f"{self.host}/run_in_shell", json=action.model_dump())
         response.raise_for_status()
         obs = Observation(**response.json())
         if not obs.success:
@@ -86,22 +89,22 @@ class RemoteRuntime(AbstractRuntime):
         return obs
 
     def close_shell(self, request: CloseRequest) -> CloseResponse:
-        response = requests.post(f"http://{self.host}/close_shell", json=request.model_dump())
+        response = requests.post(f"{self.host}/close_shell", json=request.model_dump())
         response.raise_for_status()
         return CloseResponse(**response.json())
 
     def execute(self, command: Command) -> CommandResponse:
-        response = requests.post(f"http://{self.host}/execute", json=command.model_dump())
+        response = requests.post(f"{self.host}/execute", json=command.model_dump())
         response.raise_for_status()
         return CommandResponse(**response.json())
 
     def read_file(self, request: ReadFileRequest) -> ReadFileResponse:
-        response = requests.post(f"http://{self.host}/read_file", json=request.model_dump())
+        response = requests.post(f"{self.host}/read_file", json=request.model_dump())
         response.raise_for_status()
         return ReadFileResponse(**response.json())
 
     def write_file(self, request: WriteFileRequest) -> WriteFileResponse:
-        response = requests.post(f"http://{self.host}/write_file", json=request.model_dump())
+        response = requests.post(f"{self.host}/write_file", json=request.model_dump())
         response.raise_for_status()
         return WriteFileResponse(**response.json())
 
