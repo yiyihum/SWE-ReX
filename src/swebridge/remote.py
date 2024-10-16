@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
+import argparse
 
 from fastapi import FastAPI
 
-from models import (
+from swebridge.models import (
     Action,
     CloseRequest,
     Command,
@@ -11,7 +12,7 @@ from models import (
     ReadFileRequest,
     WriteFileRequest,
 )
-from runtime import Runtime
+from swebridge.runtime import Runtime
 
 app = FastAPI()
 runtime = Runtime()
@@ -50,3 +51,18 @@ async def read_file(request: ReadFileRequest):
 @app.post("/write_file")
 async def write_file(request: WriteFileRequest):
     return (await runtime.write_file(request)).model_dump()
+
+
+def main():
+    import uvicorn
+
+    parser = argparse.ArgumentParser(description="Run the SWEBridge FastAPI server")
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind the server to")
+    parser.add_argument("--port", type=int, default=8000, help="Port to run the server on")
+
+    args = parser.parse_args()
+    uvicorn.run(app, host=args.host, port=args.port)
+
+
+if __name__ == "__main__":
+    main()

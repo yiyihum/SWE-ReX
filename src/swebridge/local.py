@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 import requests
 
-from models import (
+from swebridge.models import (
     Action,
     CloseRequest,
     CloseResponse,

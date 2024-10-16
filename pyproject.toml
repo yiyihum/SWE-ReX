@@ -1,3 +1,71 @@
+[build-system]
+requires = ["setuptools"]  # REQUIRED if [build-system] table is used
+build-backend = "setuptools.build_meta"  # If not defined, then legacy behavior can happen.
+
+
+[project]
+name = "swebridge"
+dynamic = ["version",]
+description = ""
+readme = "README.md"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+keywords = ["nlp", "agents", "code"]
+authors = [
+]
+
+# Classifiers help users find your project by categorizing it.
+classifiers = [
+  # How mature is this project? Common values are
+  #   3 - Alpha, 4 - Beta, 5 - Production/Stable
+  "Operating System :: OS Independent",
+  # Indicate who your project is intended for
+  "Intended Audience :: Developers",
+  # Pick your license as you wish
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+[project.optional-dependencies]
+dev = [
+    # "mkdocs-material",
+    # "mkdocs-glightbox",
+    # "mkdocs-include-markdown-plugin",
+    # "mkdocstrings[python]>=0.18",
+    "pytest",
+    "pytest-cov",
+    "pre-commit",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "swebridge.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+namespaces = false
+
+# [project.urls]
+# "Homepage" = "https://swe-agent.com"
+# "Bug Reports" = "http://github.com/princeton-nlp/SWE-agent/issues"
+# "Documentation" = "https://princeton-nlp.github.io/SWE-agent/"
+# "Source" = "http://github.com/princeton-nlp/SWE-agent"
+
+[project.scripts]
+swebridge-remote = "swebridge.remote:main"
+
+[tool.pytest.ini_options]
+markers = [
+]
+testpaths = [
+    "tests"
+]
+xfail_strict = true
+
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
