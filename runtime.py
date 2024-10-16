@@ -1,5 +1,6 @@
 import subprocess
 import time
+from pathlib import Path
 
 import pexpect
 
@@ -13,6 +14,10 @@ from models import (
     CreateShellRequest,
     CreateShellResponse,
     Observation,
+    ReadFileRequest,
+    ReadFileResponse,
+    WriteFileRequest,
+    WriteFileResponse,
 )
 
 
@@ -97,14 +102,9 @@ class Session:
 
 class Runtime(AbstractRuntime):
     def __init__(self):
-        """This is the main entry point for the runtime.
-
-        It keeps track of all the sessions (individual repls) that are currently open.
-        """
         self.sessions: dict[str, Session] = {}
 
     async def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
-        """Creates a new shell session."""
         if request.name in self.sessions:
             return CreateShellResponse(success=False, failure_reason="session already exists")
         shell = Session()
@@ -112,13 +112,11 @@ class Runtime(AbstractRuntime):
         return await shell.start()
 
     async def run_in_shell(self, action: Action) -> Observation:
-        """Runs a command in a shell session."""
         if action.session not in self.sessions:
             return Observation(output="", exit_code_raw="-312", failure_reason="session does not exist")
         return await self.sessions[action.session].run(action)
 
     async def close_shell(self, request: CloseRequest) -> CloseResponse:
-        """Closes a shell session."""
         if request.session not in self.sessions:
             return CloseResponse(success=False, failure_reason="session does not exist")
         out = await self.sessions[request.session].close()
@@ -126,7 +124,6 @@ class Runtime(AbstractRuntime):
         return out
 
     async def execute(self, command: Command) -> CommandResponse:
-        """Executes a command (independent of any shell session)."""
         try:
             result = subprocess.run(command.command, shell=command.shell, timeout=command.timeout, capture_output=True)
             return CommandResponse(
@@ -138,3 +135,15 @@ class Runtime(AbstractRuntime):
             return CommandResponse(stdout="", stderr="", exit_code=-1)
         except Exception as e:
             return CommandResponse(stdout="", stderr=str(e), exit_code=-2)
+
+    async def read_file(self, request: ReadFileRequest) -> ReadFileResponse:
+        try:
+            content = Path(request.path).read_text()
+            return ReadFileResponse(success=True, content=content)
+        except Exception as e:
+            return ReadFileResponse(success=False, failure_reason=str(e))
+
+    async def write_file(self, request: WriteFileRequest) -> WriteFileResponse:
+        Path(request.path).parent.mkdir(parents=True, exist_ok=True)
+        Path(request.path).write_text(request.content)
+        return WriteFileResponse(success=True)

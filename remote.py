@@ -3,7 +3,14 @@
 
 from fastapi import FastAPI
 
-from models import Action, CloseRequest, Command, CreateShellRequest
+from models import (
+    Action,
+    CloseRequest,
+    Command,
+    CreateShellRequest,
+    ReadFileRequest,
+    WriteFileRequest,
+)
 from runtime import Runtime
 
 app = FastAPI()
@@ -33,3 +40,13 @@ async def close(request: CloseRequest):
 @app.post("/execute")
 async def execute(command: Command):
     return (await runtime.execute(command)).model_dump()
+
+
+@app.post("/read_file")
+async def read_file(request: ReadFileRequest):
+    return (await runtime.read_file(request)).model_dump()
+
+
+@app.post("/write_file")
+async def write_file(request: WriteFileRequest):
+    return (await runtime.write_file(request)).model_dump()

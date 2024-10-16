@@ -58,7 +58,7 @@ class CloseResponse(BaseModel):
 
 
 class Command(BaseModel):
-    command: str
+    command: str | list[str]
     timeout: float | None = None
     shell: bool = False
 
@@ -71,3 +71,23 @@ class CommandResponse(BaseModel):
     @property
     def success(self) -> bool:
         return self.exit_code == 0
+
+
+class ReadFileRequest(BaseModel):
+    path: str
+
+
+class ReadFileResponse(BaseModel):
+    success: bool = True
+    failure_reason: str = ""
+    content: str = ""
+
+
+class WriteFileRequest(BaseModel):
+    content: str
+    path: str
+
+
+class WriteFileResponse(BaseModel):
+    success: bool = True
+    failure_reason: str = ""

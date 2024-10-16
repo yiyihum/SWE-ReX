@@ -4,20 +4,56 @@ from abc import ABC, abstractmethod
 
 import requests
 
-from models import Action, CloseRequest, CloseResponse, CreateShellRequest, CreateShellResponse, Observation
+from models import (
+    Action,
+    CloseRequest,
+    CloseResponse,
+    Command,
+    CommandResponse,
+    CreateShellRequest,
+    CreateShellResponse,
+    Observation,
+    ReadFileRequest,
+    ReadFileResponse,
+    WriteFileRequest,
+    WriteFileResponse,
+)
 
 
 class AbstractRuntime(ABC):
+    """This is the main entry point for running stuff
+
+    It keeps track of all the sessions (individual repls) that are currently open.
+    """
+
     @abstractmethod
     def create_shell(self, request: CreateShellRequest) -> CreateShellResponse:
+        """Creates a new shell session."""
         pass
 
     @abstractmethod
     def run_in_shell(self, action: Action) -> Observation:
+        """Runs a command in a shell session."""
         pass
 
     @abstractmethod
     def close_shell(self, request: CloseRequest):
+        """Closes a shell session."""
+        pass
+
+    @abstractmethod
+    def execute(self, command: Command) -> CommandResponse:
+        """Executes a command (independent of any shell session)."""
+        pass
+
+    @abstractmethod
+    def read_file(self, request: ReadFileRequest) -> ReadFileResponse:
+        """Reads a file"""
+        pass
+
+    @abstractmethod
+    def write_file(self, request: WriteFileRequest) -> WriteFileResponse:
+        """Writes a file"""
         pass
 
 
@@ -54,22 +90,44 @@ class RemoteRuntime(AbstractRuntime):
         response.raise_for_status()
         return CloseResponse(**response.json())
 
+    def execute(self, command: Command) -> CommandResponse:
+        response = requests.post(f"http://{self.host}/execute", json=command.model_dump())
+        response.raise_for_status()
+        return CommandResponse(**response.json())
+
+    def read_file(self, request: ReadFileRequest) -> ReadFileResponse:
+        response = requests.post(f"http://{self.host}/read_file", json=request.model_dump())
+        response.raise_for_status()
+        return ReadFileResponse(**response.json())
+
+    def write_file(self, request: WriteFileRequest) -> WriteFileResponse:
+        response = requests.post(f"http://{self.host}/write_file", json=request.model_dump())
+        response.raise_for_status()
+        return WriteFileResponse(**response.json())
+
 
 if __name__ == "__main__":
     runtime = RemoteRuntime("localhost:8000")
+    print(runtime.read_file(ReadFileRequest(path="README.md")))
+    print(runtime.write_file(WriteFileRequest(path="_test.txt", content="test")))
+    print(runtime.read_file(ReadFileRequest(path="_test.txt")))
+    # ----
+    # print(runtime.execute(Command(command="ls", shell=True)))
+    # ----
     # fmt: off
-    print(runtime.is_alive())
-    print(runtime.create_shell(CreateShellRequest()))
-    print(runtime.run_in_shell(Action(command="python", is_interactive_command=True, expect=[">>> "])))
-    print(runtime.run_in_shell(Action(command="print('hello world')", is_interactive_command=True, expect=[">>> "])))
-    print(runtime.run_in_shell(Action(command="quit()\n", is_interactive_quit=True)))
-    print( runtime.run_in_shell( Action( command="touch test && ls",)))
-    print( runtime.run_in_shell( Action( command="echo 'test'",)))
-    print( runtime.run_in_shell( Action( command="echo 'answer'",)))
-    print(runtime.run_in_shell(Action(command="python", is_interactive_command=True, expect=[">>> "])))
-    print(runtime.run_in_shell(Action(command="print('hello world')", is_interactive_command=True, expect=[">>> "])))
-    print(runtime.run_in_shell(Action(command="quit()\n", is_interactive_quit=True)))
-    print( runtime.run_in_shell( Action( command="touch test && ls",)))
-    print( runtime.run_in_shell( Action( command="doesnexist",)))
-    print(runtime.close_shell(CloseRequest()))
+    # test sessions and commands that run in them
+    # print(runtime.is_alive())
+    # print(runtime.create_shell(CreateShellRequest()))
+    # print(runtime.run_in_shell(Action(command="python", is_interactive_command=True, expect=[">>> "])))
+    # print(runtime.run_in_shell(Action(command="print('hello world')", is_interactive_command=True, expect=[">>> "])))
+    # print(runtime.run_in_shell(Action(command="quit()\n", is_interactive_quit=True)))
+    # print( runtime.run_in_shell( Action( command="touch test && ls",)))
+    # print( runtime.run_in_shell( Action( command="echo 'test'",)))
+    # print( runtime.run_in_shell( Action( command="echo 'answer'",)))
+    # print(runtime.run_in_shell(Action(command="python", is_interactive_command=True, expect=[">>> "])))
+    # print(runtime.run_in_shell(Action(command="print('hello world')", is_interactive_command=True, expect=[">>> "])))
+    # print(runtime.run_in_shell(Action(command="quit()\n", is_interactive_quit=True)))
+    # print( runtime.run_in_shell( Action( command="touch test && ls",)))
+    # print( runtime.run_in_shell( Action( command="doesnexist",)))
+    # print(runtime.close_shell(CloseRequest()))
     # fmt: on
