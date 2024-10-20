@@ -3,10 +3,12 @@
 import argparse
 import shutil
 import tempfile
+import traceback
 import zipfile
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, UploadFile
+from fastapi import FastAPI, File, Form, Request, UploadFile
+from fastapi.responses import JSONResponse
 
 from swerex.runtime.abstract import (
     Action,
@@ -15,11 +17,20 @@ from swerex.runtime.abstract import (
     CreateSessionRequest,
     ReadFileRequest,
     WriteFileRequest,
+    _ExceptionTransfer,
 )
 from swerex.runtime.local import Runtime
 
 app = FastAPI()
 runtime = Runtime()
+
+
+@app.exception_handler(Exception)
+async def swerexeption_handler(request: Request, exc: Exception):
+    _exc = _ExceptionTransfer(
+        message=str(exc), class_path=type(exc).__module__ + "." + type(exc).__name__, traceback=traceback.format_exc()
+    )
+    return JSONResponse(status_code=511, content={"swerexception": _exc.model_dump()})
 
 
 @app.get("/")
