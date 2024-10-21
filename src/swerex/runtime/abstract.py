@@ -65,9 +65,11 @@ class Observation(BaseModel):
     output: str = ""
     exit_code: int | None = None
     failure_reason: str = ""
-    # Which of the expect strings was matched to terminate the command.
-    # Empty string if the command timed out etc.
+
     expect_string: str = ""
+    """Which of the expect strings was matched to terminate the command.
+    Empty string if the command timed out etc.
+    """
 
 
 class CloseSessionRequest(BaseModel):
@@ -79,9 +81,13 @@ class CloseSessionResponse(BaseModel):
 
 
 class Command(BaseModel):
+    """A command to run as a subprocess."""
+
     command: str | list[str]
     timeout: float | None = None
+
     shell: bool = False
+    """Same as the subprocess.run() shell argument."""
 
 
 class CommandResponse(BaseModel):
@@ -129,7 +135,10 @@ class _ExceptionTransfer(BaseModel):
 class SweRexception(RuntimeError): ...
 
 
-class BashIncorrectSyntaxError(SweRexception, RuntimeError): ...
+class BashIncorrectSyntaxError(SweRexception, RuntimeError):
+    """Before running a bash command, we check for syntax errors.
+    This is the error message for those syntax errors.
+    """
 
 
 class UninitializedShellError(SweRexception, ValueError): ...
