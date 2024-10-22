@@ -23,6 +23,7 @@ class DockerDeployment(AbstractDeployment):
         self._docker_args = docker_args
         self._container_name = None
         self.logger = get_logger("deploy")
+        self._runtime_timeout = 0.15
 
     def _get_container_name(self) -> str:
         image_name_sanitized = "".join(c for c in self._image_name if c.isalnum() or c in "-_.")
@@ -48,7 +49,7 @@ class DockerDeployment(AbstractDeployment):
         return await self._runtime.is_alive(timeout=timeout)
 
     async def _wait_until_alive(self, timeout: float | None = None):
-        return await _wait_until_alive(self.is_alive, timeout=timeout)
+        return await _wait_until_alive(self.is_alive, timeout=timeout, function_timeout=self._runtime_timeout)
 
     async def start(
         self,
@@ -74,8 +75,8 @@ class DockerDeployment(AbstractDeployment):
         )
         self.logger.debug(f"Command: {' '.join(cmds)}")
         self._container_process = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.logger.info("Starting runtime")
-        self._runtime = RemoteRuntime(port=self._port)
+        self.logger.info(f"Starting runtime at {self._port}")
+        self._runtime = RemoteRuntime(port=self._port, timeout=self._runtime_timeout)
         t0 = time.time()
         await self._wait_until_alive(timeout=timeout)
         self.logger.info(f"Runtime started in {time.time() - t0:.2f}s")

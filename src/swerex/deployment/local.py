@@ -10,6 +10,7 @@ class LocalDeployment(AbstractDeployment):
         self,
     ):
         self._runtime = None
+        self._runtime_timeout = 0.15
 
     async def is_alive(self, *, timeout: float | None = None) -> IsAliveResponse:
         if self._runtime is None:
@@ -17,7 +18,7 @@ class LocalDeployment(AbstractDeployment):
         return await self._runtime.is_alive(timeout=timeout)
 
     async def start(self):
-        self._runtime = Runtime()
+        self._runtime = Runtime(timeout=self._runtime_timeout)
 
     async def stop(self):
         if self._runtime is not None:

@@ -32,6 +32,8 @@ runtime = Runtime()
 API_KEY = ""
 api_key_header = APIKeyHeader(name="X-API-Key")
 
+def serialize_model(model):
+    return model.model_dump() if hasattr(model, 'model_dump') else model.dict()
 
 @app.middleware("http")
 async def authenticate(request: Request, call_next):
@@ -59,37 +61,37 @@ async def root():
 
 @app.get("/is_alive")
 async def is_alive():
-    return (await runtime.is_alive()).model_dump()
+    return serialize_model(await runtime.is_alive())
 
 
 @app.post("/create_session")
 async def create_session(request: CreateSessionRequest):
-    return (await runtime.create_session(request)).model_dump()
+    return serialize_model(await runtime.create_session(request))
 
 
 @app.post("/run_in_session")
 async def run(action: Action):
-    return (await runtime.run_in_session(action)).model_dump()
+    return serialize_model(await runtime.run_in_session(action))
 
 
 @app.post("/close_session")
 async def close_session(request: CloseSessionRequest):
-    return (await runtime.close_session(request)).model_dump()
+    return serialize_model(await runtime.close_session(request))
 
 
 @app.post("/execute")
 async def execute(command: Command):
-    return (await runtime.execute(command)).model_dump()
+    return serialize_model(await runtime.execute(command))
 
 
 @app.post("/read_file")
 async def read_file(request: ReadFileRequest):
-    return (await runtime.read_file(request)).model_dump()
+    return serialize_model(await runtime.read_file(request))
 
 
 @app.post("/write_file")
 async def write_file(request: WriteFileRequest):
-    return (await runtime.write_file(request)).model_dump()
+    return serialize_model(await runtime.write_file(request))
 
 
 @app.post("/upload")

@@ -33,7 +33,14 @@ __all__ = ["RemoteRuntime"]
 
 
 class RemoteRuntime(AbstractRuntime):
-    def __init__(self, *, host: str = "http://127.0.0.1", port: int = 8000, token: str | None = None):
+    def __init__(
+        self,
+        *,
+        host: str = "http://127.0.0.1",
+        port: int | None = None,
+        token: str | None = None,
+        timeout: float = 0.15,
+    ):
         self.logger = get_logger("RR")
         if not host.startswith("http"):
             self.logger.warning("Host %s does not start with http, adding http://", host)
@@ -41,7 +48,13 @@ class RemoteRuntime(AbstractRuntime):
         self.host = host
         self.port = port
         self._token = token
-
+        self._timeout = timeout
+        
+    def _get_timeout(self, timeout: float | None = None) -> float:
+        if timeout is None:
+            return self._timeout
+        return timeout
+        
     @property
     def _headers(self) -> dict[str, str]:
         if self._token:
@@ -50,6 +63,8 @@ class RemoteRuntime(AbstractRuntime):
 
     @property
     def _api_url(self) -> str:
+        if self.port is None:
+            return self.host
         return f"{self.host}:{self.port}"
 
     def _handle_transfer_exception(self, exc_transfer: _ExceptionTransfer):
@@ -76,7 +91,9 @@ class RemoteRuntime(AbstractRuntime):
         together with the message.
         """
         try:
-            response = requests.get(f"{self._api_url}/is_alive", headers=self._headers, timeout=timeout)
+            response = requests.get(
+                f"{self._api_url}/is_alive", headers=self._headers, timeout=self._get_timeout(timeout)
+            )
             if response.status_code == 200:
                 return IsAliveResponse(**response.json())
             elif response.status_code == 511:

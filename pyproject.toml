@@ -31,7 +31,7 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "requests",
-    "pydantic",
+    "pydantic>=2",
     "pexpect",
     "bashlex",
     "python-multipart",
