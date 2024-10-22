@@ -67,9 +67,10 @@ class ModalDeployment(AbstractDeployment):
         self,
         image_name: str | None = None,
         dockerfile: str | None = None,
-        port: int = 3000,  # this is only used internally by the container, the runtime will connect to the modal tunnel url without the port
+        port: int = 8880,  # this is only used internally by the container, the runtime will connect to the modal tunnel url without the port
         container_timeout: float = 1800,
         runtime_timeout: float = 0.4,
+        **modal_args,
     ):
         self._dockerfile = dockerfile
         self._image = _get_image(image_name, dockerfile)
@@ -81,7 +82,8 @@ class ModalDeployment(AbstractDeployment):
         self._container_name = None
         self.logger = get_logger("deploy")
         self._app = modal.App.lookup("swe-rex", create_if_missing=True)
-        self._runtime_timeout = 0.4
+        self._runtime_timeout = runtime_timeout
+        self._modal_args = modal_args
 
     @property
     def container_name(self) -> str | None:
@@ -124,6 +126,7 @@ class ModalDeployment(AbstractDeployment):
             timeout=timeout,
             unencrypted_ports=[self._port],
             app=self._app,
+            **self._modal_args,
         )
         tunnel = self._sandbox.tunnels()[self._port]
         self.logger.info(f"Sandbox created with id {self._sandbox.object_id}")
