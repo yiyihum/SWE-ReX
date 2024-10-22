@@ -37,6 +37,7 @@ def serialize_model(model):
 
 @app.middleware("http")
 async def authenticate(request: Request, call_next):
+    """Authenticate requests with an API key (if set)."""
     if API_KEY:
         api_key = await api_key_header(request)
         if api_key != API_KEY:
@@ -46,6 +47,9 @@ async def authenticate(request: Request, call_next):
 
 @app.exception_handler(Exception)
 async def exception_handler(request: Request, exc: Exception):
+    """We catch exceptions that are thrown by the runtime, serialize them to JSON and
+    return them to the client so they can reraise them in their own code.
+    """
     if isinstance(exc, (HTTPException, StarletteHTTPException)):
         return await http_exception_handler(request, exc)
     _exc = _ExceptionTransfer(
@@ -102,6 +106,7 @@ async def upload(
 ):
     target_path: Path = Path(target_path)
     target_path.parent.mkdir(parents=True, exist_ok=True)
+    # First save the file to a temporary directory and potentially unzip it.
     with tempfile.TemporaryDirectory() as temp_dir:
         file_path = Path(temp_dir) / target_path.name
         try:

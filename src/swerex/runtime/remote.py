@@ -5,10 +5,12 @@ import traceback
 from pathlib import Path
 
 import requests
+from pydantic import BaseModel
 
 from swerex.runtime.abstract import (
     AbstractRuntime,
     Action,
+    CloseResponse,
     CloseSessionRequest,
     CloseSessionResponse,
     Command,
@@ -41,6 +43,14 @@ class RemoteRuntime(AbstractRuntime):
         token: str | None = None,
         timeout: float = 0.15,
     ):
+        """A runtime that connects to a remote server.
+
+        Args:
+            host: The host to connect to.
+            port: The port to connect to.
+            token: The API key to use for authentication (if any)
+            timeout: The timeout to use for requests.
+        """
         self.logger = get_logger("RR")
         if not host.startswith("http"):
             self.logger.warning("Host %s does not start with http, adding http://", host)
@@ -57,6 +67,7 @@ class RemoteRuntime(AbstractRuntime):
         
     @property
     def _headers(self) -> dict[str, str]:
+        """Request headers to use for authentication."""
         if self._token:
             return {"X-API-Key": self._token}
         return {}
@@ -67,7 +78,8 @@ class RemoteRuntime(AbstractRuntime):
             return self.host
         return f"{self.host}:{self.port}"
 
-    def _handle_transfer_exception(self, exc_transfer: _ExceptionTransfer):
+    def _handle_transfer_exception(self, exc_transfer: _ExceptionTransfer) -> None:
+        """Reraise exceptions that were thrown on the remote."""
         if exc_transfer.traceback:
             self.logger.debug("Traceback: %s", exc_transfer.traceback)
         try:
@@ -78,7 +90,8 @@ class RemoteRuntime(AbstractRuntime):
             raise SweRexception(exc_transfer.message) from None
         raise exception(exc_transfer.message) from None
 
-    def _handle_response_errors(self, response: requests.Response):
+    def _handle_response_errors(self, response: requests.Response) -> None:
+        """Raise exceptions found in the request response."""
         if response.status_code == 511:
             exc_transfer = _ExceptionTransfer(**response.json()["swerexception"])
             self._handle_transfer_exception(exc_transfer)
@@ -118,36 +131,31 @@ class RemoteRuntime(AbstractRuntime):
     async def wait_until_alive(self, *, timeout: float | None = None):
         return await _wait_until_alive(self.is_alive, timeout=timeout)
 
+    def _request(self, endpoint: str, request: BaseModel | None, output_class: type):
+        """Small helper to make requests to the server and handle errors and output."""
+        response = requests.post(
+            f"{self._api_url}/{endpoint}", json=request.model_dump() if request else None, headers=self._headers
+        )
+        self._handle_response_errors(response)
+        return output_class(**response.json())
+
     async def create_session(self, request: CreateSessionRequest) -> CreateSessionResponse:
-        response = requests.post(f"{self._api_url}/create_session", json=request.model_dump(), headers=self._headers)
-        response.raise_for_status()
-        return CreateSessionResponse(**response.json())
+        return self._request("create_session", request, CreateSessionResponse)
 
     async def run_in_session(self, action: Action) -> Observation:
-        self.logger.debug("Running action: %s", action)
-        response = requests.post(f"{self._api_url}/run_in_session", json=action.model_dump(), headers=self._headers)
-        self._handle_response_errors(response)
-        return Observation(**response.json())
+        return self._request("run_in_session", action, Observation)
 
     async def close_session(self, request: CloseSessionRequest) -> CloseSessionResponse:
-        response = requests.post(f"{self._api_url}/close_session", json=request.model_dump(), headers=self._headers)
-        self._handle_response_errors(response)
-        return CloseSessionResponse(**response.json())
+        return self._request("close_session", request, CloseSessionResponse)
 
     async def execute(self, command: Command) -> CommandResponse:
-        response = requests.post(f"{self._api_url}/execute", json=command.model_dump(), headers=self._headers)
-        self._handle_response_errors(response)
-        return CommandResponse(**response.json())
+        return self._request("execute", command, CommandResponse)
 
     async def read_file(self, request: ReadFileRequest) -> ReadFileResponse:
-        response = requests.post(f"{self._api_url}/read_file", json=request.model_dump(), headers=self._headers)
-        self._handle_response_errors(response)
-        return ReadFileResponse(**response.json())
+        return self._request("read_file", request, ReadFileResponse)
 
     async def write_file(self, request: WriteFileRequest) -> WriteFileResponse:
-        response = requests.post(f"{self._api_url}/write_file", json=request.model_dump(), headers=self._headers)
-        self._handle_response_errors(response)
-        return WriteFileResponse(**response.json())
+        return self._request("write_file", request, WriteFileResponse)
 
     async def upload(self, request: UploadRequest) -> UploadResponse:
         source = Path(request.source_path)
@@ -167,6 +175,5 @@ class RemoteRuntime(AbstractRuntime):
             self._handle_response_errors(response)
             return UploadResponse(**response.json())
 
-    async def close(self):
-        response = requests.post(f"{self._api_url}/close", headers=self._headers)
-        self._handle_response_errors(response)
+    async def close(self) -> CloseResponse:
+        return self._request("close", None, CloseResponse)
