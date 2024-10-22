@@ -8,6 +8,7 @@ import asyncio
 from botocore.exceptions import NoCredentialsError
 from pathlib import Path
 
+import swerex
 from swerex import REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.runtime.abstract import IsAliveResponse
@@ -25,7 +26,7 @@ def _get_image(image_name: str | None = None, dockerfile: str | None = None) -> 
     assert not (image_name is not None and dockerfile is not None), "Both image_name and dockerfile cannot be provided"
     if dockerfile is not None:
         context_mount = modal.Mount.from_local_dir(
-            local_path=Path(dockerfile).parent,
+            local_path=Path(swerex.__file__).parent.parent.parent,
             remote_path=".",  # to current WORKDIR
         )
         return modal.Image.from_dockerfile(dockerfile, context_mount=context_mount)

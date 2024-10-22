@@ -18,7 +18,7 @@ class LocalDeployment(AbstractDeployment):
         return await self._runtime.is_alive(timeout=timeout)
 
     async def start(self):
-        self._runtime = Runtime(timeout=self._runtime_timeout)
+        self._runtime = Runtime()
 
     async def stop(self):
         if self._runtime is not None:
