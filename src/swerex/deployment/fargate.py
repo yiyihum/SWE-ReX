@@ -4,6 +4,8 @@ import boto3
 import uuid
 import json
 
+from urllib.parse import quote
+
 from swerex import REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.runtime.abstract import IsAliveResponse
@@ -20,10 +22,8 @@ def get_family_name(image_name: str, port: int) -> str:
     return hashlib.sha256(image_name_sanitized.encode()).hexdigest()[:255]
 
 
-def get_execution_role_arn() -> str:
+def get_execution_role_arn(role_name: str) -> str:
     iam_client = boto3.client('iam')
-    role_name = f"swe-rex-execution-role"
-    
     #if it exists, return the arn
     try:
         role = iam_client.get_role(RoleName=role_name)
@@ -86,6 +86,7 @@ def get_execution_role_arn() -> str:
 def get_task_definition(
     image_name: str,
     port: int,
+    execution_role_arn: str,
 ) -> str:
     ecs_client = boto3.client('ecs')
     family_name = get_family_name(image_name, port)
@@ -94,10 +95,7 @@ def get_task_definition(
         response = ecs_client.describe_task_definition(taskDefinition=family_name)
         return response['taskDefinition']
     except ecs_client.exceptions.ClientException:
-        pass
-    
-    execution_role_arn = get_execution_role_arn()
-    
+        pass    
     task_definition = {
         'family': family_name,
         'executionRoleArn': execution_role_arn,
@@ -140,7 +138,7 @@ def get_task_definition(
 def get_cluster_arn(cluster_name: str) -> str:
     # create if it doesn't exist
     ecs_client = boto3.client('ecs')
-    response = ecs_client.create_cluster(clusterName="swe-rex-cluster")
+    response = ecs_client.create_cluster(clusterName=cluster_name)
     return response['cluster']['clusterArn']
 
 
@@ -157,19 +155,19 @@ def get_default_vpc_and_subnet() -> tuple[str, str]:
     return vpc_id, subnet_id
 
 
-def get_security_group(vpc_id: str, port: int) -> str:
+def get_security_group(vpc_id: str, port: int, security_group_name: str) -> str:
     ec2_client = boto3.client('ec2')
     
     #if it exists, just return the id
     try:
-        security_group = ec2_client.describe_security_groups(GroupNames=['swe-rex-deployment-sg'])
+        security_group = ec2_client.describe_security_groups(GroupNames=[security_group_name])
         return security_group['SecurityGroups'][0]['GroupId']
     except ec2_client.exceptions.ClientError:
         pass
     
     security_group = ec2_client.create_security_group(
-        GroupName='swe-rex-deployment-sg',
-        Description='Security group for swe-rex-deployment',
+        GroupName=security_group_name,
+        Description='Security group swe rex',
         VpcId=vpc_id
     )
     security_group_id = security_group['GroupId']
@@ -248,11 +246,44 @@ def get_public_ip(task_arn: str, cluster_arn: str) -> str:
     return eni_details['NetworkInterfaces'][0]['Association']['PublicIp']
 
 
+def get_cloudwatch_log_url(task_arn: str, task_definition: dict, container_name: str, region: str = 'us-east-2') -> str:
+    """
+    Get the CloudWatch log URL for a running task.
+    
+    Args:
+        task_arn (str): The ARN of the running task.
+        task_definition (dict): The task definition for the running task.
+        container_name (str): The name of the container in the task definition.
+        
+    Returns:
+        str: The CloudWatch log URL.
+    """
+    container_def = task_definition['containerDefinitions'][0]
+    log_config = container_def['logConfiguration']['options']
+    log_group = log_config['awslogs-group']
+    task_id = task_arn.split('/')[-1]
+    log_stream = f"{log_config['awslogs-stream-prefix']}/{container_name}/{task_id}"
+    
+    # Use %25 instead of $25 for encoding
+    encoded_log_group = quote(log_group, safe='')
+    encoded_log_stream = quote(log_stream, safe='')
+    
+    return (
+        f"https://{region}.console.aws.amazon.com/cloudwatch/home"
+        f"?region={region}"
+        f"#logsV2:log-groups/log-group/{encoded_log_group}"
+        f"/log-events/{encoded_log_stream}"
+    )
+
+
 class FargateDeployment(AbstractDeployment):
     def __init__(
         self,
         image_name: str,
         port: int = 8880,
+        cluster_name: str = "swe-rex-cluster",
+        execution_role_name: str = "swe-rex-execution-role",
+        security_group_name: str = "swe-rex-deployment-sg",
         fargate_args: dict | None = None,
         container_timeout: float = 60 * 15,
     ):
@@ -265,7 +296,9 @@ class FargateDeployment(AbstractDeployment):
         self._fargate_args = fargate_args
         self._container_name = None
         self._container_timeout = container_timeout
-        self._cluster_name = "swe-rex-cluster"
+        self._cluster_name = cluster_name
+        self._execution_role_name = execution_role_name
+        self._security_group_name = security_group_name
         self._cluster_arn = get_cluster_arn(self._cluster_name)
         self.logger = get_logger("deploy")
         # we need to setup ecs and ec2 to run containers
@@ -277,9 +310,19 @@ class FargateDeployment(AbstractDeployment):
         self._init_task_definition()
     
     def _init_task_definition(self):
-        self._task_definition = get_task_definition(self._image_name, self._port)
+        self._execution_role_arn = get_execution_role_arn(role_name=self._execution_role_name)
+        self._task_definition = get_task_definition(
+            image_name=self._image_name,
+            port=self._port,
+            execution_role_arn=self._execution_role_arn,
+        )
         self._task_definition_arn = self._task_definition['taskDefinitionArn']
         self._vpc_id, self._subnet_id = get_default_vpc_and_subnet()
+        self._security_group_id = get_security_group(
+            vpc_id=self._vpc_id,
+            port=self._port,
+            security_group_name=self._security_group_name,
+        )
 
     def _get_container_name(self) -> str:
         return get_family_name(self._image_name, self._port)
@@ -312,7 +355,6 @@ class FargateDeployment(AbstractDeployment):
         *,
         timeout: float | None = None,
     ):
-        self._security_group_id = get_security_group(self._vpc_id, self._port)
         self._container_name = self._get_container_name()
         self.logger.info(f"Starting runtime with container name {self._container_name}")
         self._task_arn = run_task(
@@ -324,29 +366,22 @@ class FargateDeployment(AbstractDeployment):
             cluster_arn=self._cluster_arn,
             **self._fargate_args,
         )
+        self.logger.info(f"Container task submitted: {self._task_arn} - waiting for it to start...")
         # wait until the container is running
+        t0 = time.time()
         ecs_client = boto3.client('ecs')
         waiter = ecs_client.get_waiter('tasks_running')
-        # try:
-            # TODO: get the cloudwatch logs url
-            # # Get the CloudWatch log stream for the task
-            # logs_client = boto3.client('logs')
-            # task_details = ecs_client.describe_tasks(cluster=self._cluster_arn, tasks=[self._task_arn])
-            # container = task_details['tasks'][0]['containers'][0]
-            # log_stream_name = container.get('name', '')
-            # log_group = f"/ecs/{self._container_name}"
-
-            # # aws_region = boto3.session.Session().region_name
-            # cloudwatch_url = (
-            #     f"https://us-east-2.console.aws.amazon.com/cloudwatch/home"
-            #     f"?region=us-east-2#logsV2:log-groups/log-group/$252Fecs$252Fswe-rex-deployment"
-            #     f"/log-events/ecs$252F/{log_stream_name}"
-            # )
-            # self.logger.info(f"CloudWatch Logs URL: {cloudwatch_url}")
-        # except Exception as e:
-            # self.logger.warning(f"Failed to get CloudWatch Logs URL: {str(e)}")
-                
         waiter.wait(cluster=self._cluster_arn, tasks=[self._task_arn])
+        self.logger.info(f"Fargate container started in {time.time() - t0:.2f}s")
+        try:
+            log_url = get_cloudwatch_log_url(
+                task_arn=self._task_arn,
+                task_definition=self._task_definition,
+                container_name=self._container_name,
+            )
+            self.logger.info(f"Monitor logs at:\n{log_url}")
+        except Exception as e:
+            self.logger.warning(f"Failed to get CloudWatch Logs URL: {str(e)}")
         public_ip = get_public_ip(self._task_arn, self._cluster_arn)
         self.logger.info(f"Container public IP: {public_ip}")
         self._runtime = RemoteRuntime(host=public_ip, port=self._port)
