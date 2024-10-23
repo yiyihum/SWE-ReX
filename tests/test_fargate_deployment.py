@@ -5,7 +5,7 @@ from swerex.deployment.fargate import FargateDeployment
 
 
 @pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Skipping modal tests in github actions")
-async def test_docker_deployment():
+async def test_fargate_deployment():
     d = FargateDeployment(
         image_name="public.ecr.aws/v0o5q4h6/test-namespace/test-repo-1:latest",
         port=8880,
