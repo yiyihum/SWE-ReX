@@ -19,6 +19,11 @@ from swerex.utils.wait import _wait_until_alive
 __all__ = ["ModalDeployment"]
 
 
+def _get_modal_user() -> str:
+    # not sure how to get the user from the modal api
+    return modal.config._profile
+
+
 def _get_image(image_name: str | None = None, dockerfile: str | None = None) -> modal.Image:
     # assert only one of image_name or dockerfile is provided
     assert image_name is not None or dockerfile is not None, "Either image_name or dockerfile must be provided"
@@ -82,6 +87,7 @@ class ModalDeployment(AbstractDeployment):
         self._container_name = None
         self.logger = get_logger("deploy")
         self._app = modal.App.lookup("swe-rex", create_if_missing=True)
+        self._user = _get_modal_user()
         self._runtime_timeout = runtime_timeout
         self._modal_args = modal_args
 
@@ -118,6 +124,7 @@ class ModalDeployment(AbstractDeployment):
         timeout: float | None = None,
     ):
         self.logger.info(f"Starting modal sandbox with image from {self._get_container_name()}")
+        t0 = time.time()
         self._sandbox = modal.Sandbox.create(
             "/bin/bash",
             "-c",
@@ -126,10 +133,11 @@ class ModalDeployment(AbstractDeployment):
             timeout=timeout,
             unencrypted_ports=[self._port],
             app=self._app,
-            **self._modal_args,
         )
         tunnel = self._sandbox.tunnels()[self._port]
-        self.logger.info(f"Sandbox created with id {self._sandbox.object_id}")
+        self.logger.info(f"Sandbox ({self._sandbox.object_id}) created in {time.time() - t0:.2f}s")
+        log_url = f'https://modal.com/apps/{self._user}/main/deployed/{self._app.name}?activeTab=logs&taskId={self._sandbox._get_task_id()}'
+        self.logger.info(f"Check sandbox logs at {log_url}")
         await asyncio.sleep(0.1)
         self.logger.info(f"Starting runtime at {tunnel.url}")
         self._runtime = RemoteRuntime(host=tunnel.url, timeout=self._runtime_timeout)
