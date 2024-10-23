@@ -198,7 +198,7 @@ def run_task(
     cluster_arn: str,
     vcpus: int = 1,
     memory: int = 2048,
-    ephemeral_storage: int = 20,
+    ephemeral_storage: int = 21,
     **fargate_args,
 ) -> str:
     run_task_args = {
@@ -213,18 +213,24 @@ def run_task(
             }
         }
     }
-    overrides = {}
-    container_override = {
-        'name': name,
+    overrides = {
+        'containerOverrides': [
+            {
+                'name': name,
+                'command': [
+                    command,
+                ],
+            },
+        ],
         'cpu': f'{vcpus}vCPU',
-        'memory': memory,
-        'command': command,
-        'ephemeralStorage': {'sizeInGiB': ephemeral_storage},
+        'memory': str(memory),
+        'ephemeralStorage': {
+            'sizeInGiB': ephemeral_storage,
+        },
     }
     if fargate_args:
-        container_overrides.update(fargate_args)
-    container_overrides = [container_override]
-
+        overrides.update(fargate_args)
+        
     if overrides:
         run_task_args['overrides'] = overrides
 
@@ -276,9 +282,8 @@ class FargateDeployment(AbstractDeployment):
         self._vpc_id, self._subnet_id = get_default_vpc_and_subnet()
 
     def _get_container_name(self) -> str:
-        family_name = get_family_name(self._image_name, self._port)
-        return f"{family_name}-{uuid.uuid4()}"
-
+        return get_family_name(self._image_name, self._port)
+    
     @property
     def container_name(self) -> str | None:
         return self._container_name
