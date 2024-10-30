@@ -164,7 +164,11 @@ class ModalDeployment(AbstractDeployment):
         return f"{REMOTE_EXECUTABLE_NAME} --port {self._port} --auth-token {token} || pipx run {pkg_name} --port {self._port} --auth-token {token}"
 
     def get_modal_log_url(self) -> str:
-        """Returns URL to modal logs"""
+        """Returns URL to modal logs
+
+        Raises:
+            DeploymentNotStartedError: If the deployment was not started.
+        """
         return f"https://modal.com/apps/{self._user}/main/deployed/{self.app.name}?activeTab=logs&taskId={self.sandbox._get_task_id()}"
 
     async def start(

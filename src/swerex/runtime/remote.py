@@ -3,6 +3,7 @@ import sys
 import tempfile
 import traceback
 from pathlib import Path
+from typing import Any
 
 import requests
 from pydantic import BaseModel
@@ -129,7 +130,7 @@ class RemoteRuntime(AbstractRuntime):
     async def wait_until_alive(self, *, timeout: float | None = None):
         return await _wait_until_alive(self.is_alive, timeout=timeout)
 
-    def _request(self, endpoint: str, request: BaseModel | None, output_class: type):
+    def _request(self, endpoint: str, request: BaseModel | None, output_class: Any):
         """Small helper to make requests to the server and handle errors and output."""
         response = requests.post(
             f"{self._api_url}/{endpoint}", json=request.model_dump() if request else None, headers=self._headers
