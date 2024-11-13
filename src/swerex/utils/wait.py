@@ -18,14 +18,16 @@ async def _wait_until_alive(
     """
     end_time = time.time() + timeout
     n_attempts = 0
+    await_response = None
     while time.time() < end_time:
         await_response = await function(timeout=function_timeout)
         if await_response:
             return
         time.sleep(sleep)
         n_attempts += 1
+    last_response_message = await_response.message if await_response else None
     msg = (
         f"Runtime did not start within {timeout}s (tried to connect {n_attempts} times). "
-        f"The last await response was:\n{await_response.message}"
+        f"The last await response was:\n{last_response_message}"
     )
     raise TimeoutError(msg)
