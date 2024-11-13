@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/swe-rex-logo.png" alt="SWE-ReX" style="height: 15em"/>
+<img src="docs/assets/swe-rex-logo.png" alt="SWE-ReX" style="height: 12em"/>
 
 # SWE-agent Remote Execution Framework
 
