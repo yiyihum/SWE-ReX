@@ -103,8 +103,8 @@ class ModalDeployment(AbstractDeployment):
     def __init__(
         self,
         image: str | modal.Image | PurePath,
-        startup_timeout: float = 1800,
-        runtime_timeout: float = 0.4,
+        startup_timeout: float = 0.4,
+        runtime_timeout: float = 1800.0,
         modal_sandbox_kwargs: dict[str, Any] | None = None,
     ):
         """Deployment for modal.com. The deployment will only start when the
@@ -184,7 +184,7 @@ class ModalDeployment(AbstractDeployment):
             "-c",
             self._start_swerex_cmd(token),
             image=self._image,
-            timeout=int(self._startup_timeout),
+            timeout=int(self._runtime_timeout),
             unencrypted_ports=[self._port],
             app=self._app,
             **self._modal_kwargs,
@@ -199,7 +199,7 @@ class ModalDeployment(AbstractDeployment):
         self._runtime = RemoteRuntime(host=tunnel.url, timeout=self._runtime_timeout, auth_token=token)
         remaining_startup_timeout = max(0, self._startup_timeout - elapsed_sandbox_creation)
         t1 = time.time()
-        await self._wait_until_alive(timeout=self._runtime_timeout + remaining_startup_timeout)
+        await self._wait_until_alive(timeout=remaining_startup_timeout)
         self.logger.info(f"Runtime started in {time.time() - t1:.2f}s")
 
     async def stop(self):
