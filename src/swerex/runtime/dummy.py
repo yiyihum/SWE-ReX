@@ -27,6 +27,14 @@ class DummyRuntime(AbstractRuntime):
     Useful for testing.
     """
 
+    def __init__(
+        self,
+    ):
+        self.run_in_session_outputs: list[BashObservation] | BashObservation = BashObservation(exit_code=0)
+        """Predefine returns of run_in_session. If set to list, will pop from list, else will 
+        return the same value.
+        """
+
     async def is_alive(self, *, timeout: float | None = None) -> IsAliveResponse:
         return IsAliveResponse(is_alive=True)
 
@@ -37,10 +45,9 @@ class DummyRuntime(AbstractRuntime):
         raise ValueError(msg)
 
     async def run_in_session(self, action: Action) -> Observation:
-        if action.session_type == "bash":
-            return BashObservation(exit_code=0)
-        msg = f"Unknown session type: {action.session_type}"
-        raise ValueError(msg)
+        if isinstance(self.run_in_session_outputs, list):
+            return self.run_in_session_outputs.pop(0)
+        return self.run_in_session_outputs
 
     async def close_session(self, request: CloseSessionRequest) -> CloseSessionResponse:
         if request.session_type == "bash":
