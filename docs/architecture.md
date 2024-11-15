@@ -1,7 +1,7 @@
 Let's take a look how SWE-ReX works:
 
 1. Your central entry point is one of the [`Deployment` classes][abstractdeployment], depending on where your code should run. 
-2. Your `Deployment` instances allows your to start your docker container, AWS instance, or whatever at the push of a button. That's right, no more fiddeling with the AWS console!
+2. Your `Deployment` instances allows your to start your docker container, AWS instance, or whatever at the push of a button. That's right, no more fiddling with the AWS console!
 3. After the `Deployment` has started your container _somewhere_, you are handed a [`RemoteRuntime` instance][remoteruntime].
   This is your main interface for interacting with the environment. You can use it start new shell or interactive sessions, read and write files, execute one-off commands, etc.
 
