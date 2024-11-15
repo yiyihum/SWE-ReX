@@ -26,6 +26,7 @@ def _is_image_available(image: str) -> bool:
 def _pull_image(image: str):
     subprocess.check_output(["docker", "pull", image])
 
+
 def _remove_image(image: str):
     subprocess.check_output(["docker", "rmi", image])
 
@@ -120,7 +121,7 @@ class DockerDeployment(AbstractDeployment):
             "-c",
             f"{REMOTE_EXECUTABLE_NAME} {rex_args} || ({pipx_install} && pipx run {PACKAGE_NAME} {rex_args})",
         ]
-    
+
     def _pull_image(self):
         if self._pull == "never":
             return
@@ -132,7 +133,6 @@ class DockerDeployment(AbstractDeployment):
     async def start(self):
         """Starts the runtime."""
         self._pull_image()
-        port = self._port or find_free_port()
         if self._port is None:
             self._port = find_free_port()
         assert self._container_name is None
@@ -174,7 +174,7 @@ class DockerDeployment(AbstractDeployment):
         self._container_name = None
         if self._remove_images:
             if _is_image_available(self._image_name):
-                self._remove_image(self._image_name)
+                _remove_image(self._image_name)
 
     @property
     def runtime(self) -> RemoteRuntime:
