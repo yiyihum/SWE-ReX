@@ -1,6 +1,6 @@
 import pytest
 
-from swerex.runtime.abstract import BashIncorrectSyntaxError
+from swerex.exceptions import BashIncorrectSyntaxError
 from swerex.runtime.local import _check_bash_command, _split_bash_command
 
 

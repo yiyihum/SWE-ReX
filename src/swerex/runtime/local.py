@@ -4,17 +4,26 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any, Self
 
 import bashlex
 import bashlex.ast
 import bashlex.errors
 import pexpect
 
+from swerex.exceptions import (
+    BashIncorrectSyntaxError,
+    CommandTimeoutError,
+    NoExitCodeError,
+    NonZeroExitCodeError,
+    SessionDoesNotExistError,
+    SessionExistsError,
+    SessionNotInitializedError,
+)
 from swerex.runtime.abstract import (
     AbstractRuntime,
     Action,
     BashAction,
-    BashIncorrectSyntaxError,
     BashObservation,
     CloseBashSessionResponse,
     CloseResponse,
@@ -22,28 +31,23 @@ from swerex.runtime.abstract import (
     CloseSessionResponse,
     Command,
     CommandResponse,
-    CommandTimeoutError,
     CreateBashSessionRequest,
     CreateBashSessionResponse,
     CreateSessionRequest,
     CreateSessionResponse,
     IsAliveResponse,
-    NoExitCodeError,
-    NonZeroExitCodeError,
     Observation,
     ReadFileRequest,
     ReadFileResponse,
-    SessionDoesNotExistError,
-    SessionExistsError,
-    SessionNotInitializedError,
     UploadRequest,
     UploadResponse,
     WriteFileRequest,
     WriteFileResponse,
 )
+from swerex.runtime.config import LocalRuntimeConfig
 from swerex.utils.log import get_logger
 
-__all__ = ["Runtime", "BashSession"]
+__all__ = ["LocalRuntime", "BashSession"]
 
 
 def _split_bash_command(inpt: str) -> list[str]:
@@ -302,13 +306,21 @@ class BashSession(Session):
         self.shell.interact()
 
 
-class Runtime(AbstractRuntime):
-    def __init__(self):
+class LocalRuntime(AbstractRuntime):
+    def __init__(self, **kwargs: Any):
         """A Runtime that runs locally and actually executes commands in a shell.
         If you are deploying to Modal/Fargate/etc., this class will be running within the docker container
         on Modal/Fargate/etc.
+
+        Args:
+            **kwargs: Keyword arguments (see `LocalRuntimeConfig` for details).
         """
+        self._config = LocalRuntimeConfig(**kwargs)
         self._sessions: dict[str, Session] = {}
+
+    @classmethod
+    def from_config(cls, config: LocalRuntimeConfig) -> Self:
+        return cls(**config.model_dump())
 
     @property
     def sessions(self) -> dict[str, Session]:

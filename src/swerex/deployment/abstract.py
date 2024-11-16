@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from swerex.runtime.abstract import AbstractRuntime, IsAliveResponse
 
-__all__ = ["AbstractDeployment", "DeploymentNotStartedError"]
+__all__ = ["AbstractDeployment"]
 
 
 class AbstractDeployment(ABC):
@@ -37,8 +37,3 @@ class AbstractDeployment(ABC):
         """Stops the runtime when the object is deleted."""
         print("Stopping runtime because Deployment object is deleted")
         asyncio.run(self.stop())
-
-
-class DeploymentNotStartedError(RuntimeError):
-    def __init__(self, message="Deployment not started"):
-        super().__init__(message)

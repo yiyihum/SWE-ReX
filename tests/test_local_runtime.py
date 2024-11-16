@@ -3,15 +3,15 @@ from pathlib import Path
 import pytest
 
 from swerex.runtime.abstract import ReadFileRequest, UploadRequest
-from swerex.runtime.local import Runtime
+from swerex.runtime.local import LocalRuntime
 
 
 @pytest.fixture
 def local_runtime():
-    return Runtime()
+    return LocalRuntime()
 
 
-async def test_upload_file(local_runtime: Runtime, tmp_path: Path):
+async def test_upload_file(local_runtime: LocalRuntime, tmp_path: Path):
     file_path = tmp_path / "source.txt"
     file_path.write_text("test")
     tmp_target = tmp_path / "target.txt"
@@ -19,7 +19,7 @@ async def test_upload_file(local_runtime: Runtime, tmp_path: Path):
     assert (await local_runtime.read_file(ReadFileRequest(path=str(tmp_target)))).content == "test"
 
 
-async def test_upload_directory(local_runtime: Runtime, tmp_path: Path):
+async def test_upload_directory(local_runtime: LocalRuntime, tmp_path: Path):
     dir_path = tmp_path / "source_dir"
     dir_path.mkdir()
     (dir_path / "file1.txt").write_text("test1")

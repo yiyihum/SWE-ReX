@@ -3,15 +3,18 @@ import os
 import time
 import uuid
 from pathlib import Path, PurePath
-from typing import Any
+from typing import Any, Self
 
 import boto3
 import modal
 from botocore.exceptions import NoCredentialsError
 
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
-from swerex.deployment.abstract import AbstractDeployment, DeploymentNotStartedError
+from swerex.deployment.abstract import AbstractDeployment
+from swerex.deployment.config import ModalDeploymentConfig
+from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
+from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
 from swerex.utils.log import get_logger
 from swerex.utils.wait import _wait_until_alive
@@ -100,6 +103,9 @@ class _ImageBuilder:
 
 
 class ModalDeployment(AbstractDeployment):
+    # Leave the constructor args for now, because image can take a modal.Image
+    # but we don't want to make this part of the config class because it would
+    # force us to have modal installed/import it...
     def __init__(
         self,
         image: str | modal.Image | PurePath,
@@ -133,6 +139,15 @@ class ModalDeployment(AbstractDeployment):
             modal_sandbox_kwargs = {}
         self._modal_kwargs = modal_sandbox_kwargs
 
+    @classmethod
+    def from_config(cls, config: ModalDeploymentConfig) -> Self:
+        return cls(
+            image=config.image,
+            startup_timeout=config.startup_timeout,
+            runtime_timeout=config.runtime_timeout,
+            modal_sandbox_kwargs=config.modal_sandbox_kwargs,
+        )
+
     def _get_token(self) -> str:
         return str(uuid.uuid4())
 
@@ -155,7 +170,7 @@ class ModalDeployment(AbstractDeployment):
 
     async def _wait_until_alive(self, timeout: float = 10.0):
         assert self._runtime is not None
-        return await _wait_until_alive(self.is_alive, timeout=timeout, function_timeout=self._runtime._timeout)
+        return await _wait_until_alive(self.is_alive, timeout=timeout, function_timeout=self._runtime._config.timeout)
 
     def _start_swerex_cmd(self, token: str) -> str:
         """Start swerex-server on the remote. If swerex is not installed arelady,
@@ -196,7 +211,9 @@ class ModalDeployment(AbstractDeployment):
         self.logger.info(f"Sandbox created with id {self._sandbox.object_id}")
         await asyncio.sleep(1)
         self.logger.info(f"Starting runtime at {tunnel.url}")
-        self._runtime = RemoteRuntime(host=tunnel.url, timeout=self._runtime_timeout, auth_token=token)
+        self._runtime = RemoteRuntime.from_config(
+            RemoteRuntimeConfig(host=tunnel.url, timeout=self._runtime_timeout, auth_token=token)
+        )
         remaining_startup_timeout = max(0, self._startup_timeout - elapsed_sandbox_creation)
         t1 = time.time()
         await self._wait_until_alive(timeout=remaining_startup_timeout)

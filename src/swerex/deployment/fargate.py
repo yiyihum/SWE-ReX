@@ -1,11 +1,15 @@
 import time
 import uuid
+from typing import Any, Self
 
 import boto3
 
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
-from swerex.deployment.abstract import AbstractDeployment, DeploymentNotStartedError
+from swerex.deployment.abstract import AbstractDeployment
+from swerex.deployment.config import FargateDeploymentConfig
+from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
+from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
 from swerex.utils.aws import (
     get_cloudwatch_log_url,
@@ -25,31 +29,12 @@ from swerex.utils.wait import _wait_until_alive
 class FargateDeployment(AbstractDeployment):
     def __init__(
         self,
-        image: str,
-        port: int = 8880,
-        cluster_name: str = "swe-rex-cluster",
-        execution_role_prefix: str = "swe-rex-execution-role",
-        task_definition_prefix: str = "swe-rex-task",
-        log_group: str | None = "/ecs/swe-rex-deployment",
-        security_group_prefix: str = "swe-rex-deployment-sg",
-        fargate_args: dict | None = None,
-        container_timeout: float = 60 * 15,
-        runtime_timeout: float = 30,
+        **kwargs: Any,
     ):
-        self._image = image
+        self._config = FargateDeploymentConfig(**kwargs)
         self._runtime: RemoteRuntime | None = None
-        self._port = port
         self._container_process = None
         self._container_name = None
-        if fargate_args is None:
-            fargate_args = {}
-        self._fargate_args = fargate_args
-        self._container_timeout = container_timeout
-        self._cluster_name = cluster_name
-        self._execution_role_prefix = execution_role_prefix
-        self._task_definition_prefix = task_definition_prefix
-        self._log_group = log_group
-        self._security_group_prefix = security_group_prefix
         self.logger = get_logger("deploy")
         # we need to setup ecs and ec2 to run containers
         self._cluster_arn = None
@@ -58,25 +43,28 @@ class FargateDeployment(AbstractDeployment):
         self._subnet_id = None
         self._task_arn = None
         self._security_group_id = None
-        self._runtime_timeout = runtime_timeout
+
+    @classmethod
+    def from_config(cls, config: FargateDeploymentConfig) -> Self:
+        return cls(**config.model_dump())
 
     def _init_aws(self):
-        self._cluster_arn = get_cluster_arn(self._cluster_name)
-        self._execution_role_arn = get_execution_role_arn(execution_role_prefix=self._execution_role_prefix)
+        self._cluster_arn = get_cluster_arn(self._config.cluster_name)
+        self._execution_role_arn = get_execution_role_arn(execution_role_prefix=self._config.execution_role_prefix)
         self._task_definition = get_task_definition(
-            image_name=self._image,
-            port=self._port,
+            image_name=self._config.image,
+            port=self._config.port,
             execution_role_arn=self._execution_role_arn,
-            task_definition_prefix=self._task_definition_prefix,
-            log_group=self._log_group,
+            task_definition_prefix=self._config.task_definition_prefix,
+            log_group=self._config.log_group,
         )
         self._vpc_id, self._subnet_id = get_default_vpc_and_subnet()
         self._security_group_id = get_security_group(
             vpc_id=self._vpc_id,
-            port=self._port,
-            security_group_prefix=self._security_group_prefix,
+            port=self._config.port,
+            security_group_prefix=self._config.security_group_prefix,
         )
-        self._container_name = get_container_name(self._image)
+        self._container_name = get_container_name(self._config.image)
 
     def _get_container_name(self) -> str:
         return self._container_name
@@ -103,21 +91,21 @@ class FargateDeployment(AbstractDeployment):
                 raise RuntimeError(msg)
         return await self._runtime.is_alive(timeout=timeout)
 
-    async def _wait_until_alive(self, timeout: float | None = None):
-        return await _wait_until_alive(self.is_alive, timeout=timeout, function_timeout=self._container_timeout)
+    async def _wait_until_alive(self, timeout: float):
+        return await _wait_until_alive(self.is_alive, timeout=timeout, function_timeout=self._config.container_timeout)
 
     def _get_command(self, *, token: str) -> list[str]:
-        main_command = f"{REMOTE_EXECUTABLE_NAME} --port {self._port}"
+        main_command = f"{REMOTE_EXECUTABLE_NAME} --port {self._config.port}"
         fallback_commands = [
             "apt-get update -y",
             "apt-get install pipx -y",
             "pipx ensurepath",
-            f"pipx run {PACKAGE_NAME} --port {self._port} --auth-token {token}",
+            f"pipx run {PACKAGE_NAME} --port {self._config.port} --auth-token {token}",
         ]
         fallback_script = " && ".join(fallback_commands)
         # Wrap the entire command in bash -c to ensure timeout applies to everything
         inner_command = f"{main_command} || ( {fallback_script} )"
-        full_command = f"timeout {self._container_timeout}s bash -c '{inner_command}'"
+        full_command = f"timeout {self._config.container_timeout}s bash -c '{inner_command}'"
         assert full_command.startswith("timeout "), "command must start with timeout!"
         return [full_command]
 
@@ -139,7 +127,7 @@ class FargateDeployment(AbstractDeployment):
             subnet_id=self._subnet_id,
             security_group_id=self._security_group_id,
             cluster_arn=self._cluster_arn,
-            **self._fargate_args,
+            **self._config.fargate_args,
         )
         self.logger.info(f"Container task submitted: {self._task_arn} - waiting for it to start...")
         # wait until the container is running
@@ -148,7 +136,7 @@ class FargateDeployment(AbstractDeployment):
         waiter = ecs_client.get_waiter("tasks_running")
         waiter.wait(cluster=self._cluster_arn, tasks=[self._task_arn])
         self.logger.info(f"Fargate container started in {time.time() - t0:.2f}s")
-        if self._log_group:
+        if self._config.log_group:
             try:
                 log_url = get_cloudwatch_log_url(
                     task_arn=self._task_arn,
@@ -160,9 +148,11 @@ class FargateDeployment(AbstractDeployment):
                 self.logger.warning(f"Failed to get CloudWatch Logs URL: {str(e)}")
         public_ip = get_public_ip(self._task_arn, self._cluster_arn)
         self.logger.info(f"Container public IP: {public_ip}")
-        self._runtime = RemoteRuntime(host=public_ip, port=self._port, auth_token=token)
+        self._runtime = RemoteRuntime.from_config(
+            RemoteRuntimeConfig(host=public_ip, port=self._config.port, auth_token=token)
+        )
         t0 = time.time()
-        await self._wait_until_alive(timeout=self._runtime_timeout)
+        await self._wait_until_alive(timeout=self._config.runtime_timeout)
         self.logger.info(f"Runtime started in {time.time() - t0:.2f}s")
 
     async def stop(self):
