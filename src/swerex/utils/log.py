@@ -19,8 +19,8 @@ def _interpret_level_from_env(level: str | None, *, default=logging.DEBUG) -> in
     return getattr(logging, level.upper())
 
 
-_STREAM_LEVEL = _interpret_level_from_env(os.environ.get("SWE_AGENT_LOG_STREAM_LEVEL"))
-_FILE_LEVEL = _interpret_level_from_env(os.environ.get("SWE_AGENT_LOG_FILE_LEVEL"))
+_STREAM_LEVEL = _interpret_level_from_env(os.environ.get("SWE_REX_LOG_STREAM_LEVEL"))
+_FILE_LEVEL = _interpret_level_from_env(os.environ.get("SWE_REX_LOG_FILE_LEVEL"))
 
 
 class _RichHandlerWithEmoji(RichHandler):
@@ -72,4 +72,4 @@ def add_file_handler(path: PurePath | str) -> None:
     _ADDITIONAL_HANDLERS.append(handler)
 
 
-default_logger = get_logger("swe-agent")
+default_logger = get_logger("swe-rex")
