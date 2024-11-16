@@ -1,7 +1,7 @@
 from pathlib import PurePath
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from swerex.deployment.abstract import AbstractDeployment
 
@@ -16,6 +16,16 @@ class ModalDeploymentConfig(BaseModel):
     """The runtime timeout."""
     modal_sandbox_kwargs: dict[str, Any] = {}
     """Additional arguments to pass to `modal.Sandbox.create`"""
+
+    type: Literal["modal"] = "modal"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.modal import ModalDeployment
+
+        return ModalDeployment.from_config(self)
 
 
 class DockerDeploymentConfig(BaseModel):
@@ -32,9 +42,27 @@ class DockerDeploymentConfig(BaseModel):
     remove_images: bool = False
     """Whether to remove the image after it has stopped."""
 
+    type: Literal["docker"] = "docker"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.docker import DockerDeployment
+
+        return DockerDeployment.from_config(self)
+
 
 class DummyDeploymentConfig(BaseModel):
-    pass
+    type: Literal["dummy"] = "dummy"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.dummy import DummyDeployment
+
+        return DummyDeployment.from_config(self)
 
 
 class FargateDeploymentConfig(BaseModel):
@@ -49,9 +77,29 @@ class FargateDeploymentConfig(BaseModel):
     container_timeout: float = 60 * 15
     runtime_timeout: float = 30
 
+    type: Literal["fargate"] = "fargate"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.fargate import FargateDeployment
+
+        return FargateDeployment.from_config(self)
+
 
 class LocalDeploymentConfig(BaseModel):
     """The port that the runtime connects to."""
+
+    type: Literal["local"] = "local"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.local import LocalDeployment
+
+        return LocalDeployment.from_config(self)
 
 
 class RemoteDeploymentConfig(BaseModel):
@@ -62,6 +110,16 @@ class RemoteDeploymentConfig(BaseModel):
     port: int | None = None
     """The port to connect to."""
     timeout: float = 0.15
+
+    type: Literal["remote"] = "remote"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.remote import RemoteDeployment
+
+        return RemoteDeployment.from_config(self)
 
 
 DeploymentConfig = (
@@ -77,31 +135,4 @@ DeploymentConfig = (
 def get_deployment(
     config: DeploymentConfig,
 ) -> AbstractDeployment:
-    # Defer imports to avoid pulling in unnecessary dependencies
-    if isinstance(config, DummyDeploymentConfig):
-        from swerex.deployment.dummy import DummyDeployment
-
-        return DummyDeployment.from_config(config)
-    if isinstance(config, LocalDeploymentConfig):
-        from swerex.deployment.local import LocalDeployment
-
-        return LocalDeployment.from_config(config)
-    if isinstance(config, DockerDeploymentConfig):
-        from swerex.deployment.docker import DockerDeployment
-
-        return DockerDeployment.from_config(config)
-    if isinstance(config, ModalDeploymentConfig):
-        from swerex.deployment.modal import ModalDeployment
-
-        return ModalDeployment.from_config(config)
-    if isinstance(config, FargateDeploymentConfig):
-        from swerex.deployment.fargate import FargateDeployment
-
-        return FargateDeployment.from_config(config)
-    if isinstance(config, RemoteDeploymentConfig):
-        from swerex.deployment.remote import RemoteDeployment
-
-        return RemoteDeployment.from_config(config)
-
-    msg = f"Unknown deployment type: {type(config)}"
-    raise ValueError(msg)
+    return config.get_deployment()
