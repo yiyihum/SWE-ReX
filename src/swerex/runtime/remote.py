@@ -8,6 +8,7 @@ from typing import Any, Self
 import requests
 from pydantic import BaseModel
 
+from swerex.exceptions import SweRexception
 from swerex.runtime.abstract import (
     AbstractRuntime,
     Action,
@@ -22,7 +23,6 @@ from swerex.runtime.abstract import (
     Observation,
     ReadFileRequest,
     ReadFileResponse,
-    SweRexception,
     UploadRequest,
     UploadResponse,
     WriteFileRequest,

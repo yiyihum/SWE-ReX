@@ -1,13 +1,13 @@
 import pytest
 
-from swerex.deployment.docker import DockerDeployment, DockerDeploymentConfig
+from swerex.deployment.docker import DockerDeployment
 from swerex.utils.free_port import find_free_port
 
 
 async def test_docker_deployment():
     port = find_free_port()
     print(f"Using port {port} for the docker deployment")
-    d = DockerDeployment(DockerDeploymentConfig(image="swe-rex-test:latest", port=port))
+    d = DockerDeployment(image="swe-rex-test:latest", port=port)
     with pytest.raises(RuntimeError):
         await d.is_alive()
     await d.start()

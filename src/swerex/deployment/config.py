@@ -70,6 +70,7 @@ DeploymentConfig = (
     | ModalDeploymentConfig
     | FargateDeploymentConfig
     | RemoteDeploymentConfig
+    | DummyDeploymentConfig
 )
 
 

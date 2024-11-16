@@ -10,8 +10,9 @@ import modal
 from botocore.exceptions import NoCredentialsError
 
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
-from swerex.deployment.abstract import AbstractDeployment, DeploymentNotStartedError
+from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import ModalDeploymentConfig
+from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime

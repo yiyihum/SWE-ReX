@@ -1,7 +1,7 @@
 import pytest
 
-from swerex.deployment.abstract import DeploymentNotStartedError
 from swerex.deployment.remote import RemoteDeployment
+from swerex.exceptions import DeploymentNotStartedError
 from tests.conftest import TEST_API_KEY
 
 

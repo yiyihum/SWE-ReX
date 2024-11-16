@@ -5,8 +5,9 @@ from typing import Any, Self
 import boto3
 
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
-from swerex.deployment.abstract import AbstractDeployment, DeploymentNotStartedError
+from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import FargateDeploymentConfig
+from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime

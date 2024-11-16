@@ -1,7 +1,8 @@
 from typing import Any, Self
 
-from swerex.deployment.abstract import AbstractDeployment, DeploymentNotStartedError
+from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import RemoteDeploymentConfig
+from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
