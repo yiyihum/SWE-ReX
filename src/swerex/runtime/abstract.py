@@ -145,6 +145,9 @@ class Command(BaseModel):
     command has a non-zero exit code and `check` is True.
     """
 
+    env: dict[str, str] | None = None
+    """Environment variables to pass to the command."""
+
 
 class CommandResponse(BaseModel):
     stdout: str = ""

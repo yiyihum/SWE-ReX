@@ -367,7 +367,7 @@ class LocalRuntime(AbstractRuntime):
             NonZeroExitCodeError: If the command has a non-zero exit code and `check` is True.
         """
         try:
-            result = subprocess.run(command.command, shell=command.shell, timeout=command.timeout, capture_output=True)
+            result = subprocess.run(command.command, shell=command.shell, timeout=command.timeout, env=command.env, capture_output=True)
             r = CommandResponse(
                 stdout=result.stdout.decode(errors="backslashreplace"),
                 stderr=result.stderr.decode(errors="backslashreplace"),
