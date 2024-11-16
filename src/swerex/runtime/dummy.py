@@ -1,3 +1,5 @@
+from typing import Any, Self
+
 from swerex.runtime.abstract import (
     AbstractRuntime,
     Action,
@@ -20,20 +22,29 @@ from swerex.runtime.abstract import (
     WriteFileRequest,
     WriteFileResponse,
 )
+from swerex.runtime.config import DummyRuntimeConfig
 
 
 class DummyRuntime(AbstractRuntime):
-    """This runtime does nothing.
-    Useful for testing.
-    """
-
     def __init__(
         self,
+        **kwargs: Any,
     ):
+        """This runtime does nothing.
+        Useful for testing.
+
+        Args:
+            **kwargs: Keyword arguments (see `DummyRuntimeConfig` for details).
+        """
         self.run_in_session_outputs: list[BashObservation] | BashObservation = BashObservation(exit_code=0)
         """Predefine returns of run_in_session. If set to list, will pop from list, else will 
         return the same value.
         """
+        self._config = DummyRuntimeConfig(**kwargs)
+
+    @classmethod
+    def from_config(cls, config: DummyRuntimeConfig) -> Self:
+        return cls(**config.model_dump())
 
     async def is_alive(self, *, timeout: float | None = None) -> IsAliveResponse:
         return IsAliveResponse(is_alive=True)

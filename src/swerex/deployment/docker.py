@@ -2,17 +2,19 @@ import shlex
 import subprocess
 import time
 import uuid
-from typing import Literal
+from typing import Any, Self
 
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment, DeploymentNotStartedError
+from swerex.deployment.config import DockerDeploymentConfig
 from swerex.runtime.abstract import IsAliveResponse
+from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
 from swerex.utils.free_port import find_free_port
 from swerex.utils.log import get_logger
 from swerex.utils.wait import _wait_until_alive
 
-__all__ = ["DockerDeployment"]
+__all__ = ["DockerDeployment", "DockerDeploymentConfig"]
 
 
 def _is_image_available(image: str) -> bool:
@@ -23,52 +25,38 @@ def _is_image_available(image: str) -> bool:
         return False
 
 
-def _pull_image(image: str):
-    subprocess.check_output(["docker", "pull", image])
+def _pull_image(image: str) -> None:
+    subprocess.check_call(["docker", "pull", image])
 
 
-def _remove_image(image: str):
-    subprocess.check_output(["docker", "rmi", image])
+def _remove_image(image: str) -> None:
+    subprocess.check_call(["docker", "rmi", image])
 
 
 class DockerDeployment(AbstractDeployment):
     def __init__(
         self,
-        image: str,
-        *,
-        port: int | None = None,
-        docker_args: list[str] | None = None,
-        startup_timeout: float = 60.0,
-        pull: Literal["never", "always", "missing"] = "missing",
-        remove_images: bool = False,
+        **kwargs: Any,
     ):
         """Deployment to local docker image.
 
         Args:
-            image: The name of the docker image to use.
-            port: The port that the docker container connects to. If None, a free port is found.
-            docker_args: Additional arguments to pass to the docker run command.
-            startup_timeout: The time to wait for the runtime to start.
-            pull: When to pull docker images.
-            remove_images: Whether to remove the imageafter it has stopped.
+            **kwargs: Keyword arguments (see `DockerDeploymentConfig` for details).
         """
-        self._image_name = image
+        self._config = DockerDeploymentConfig(**kwargs)
         self._runtime: RemoteRuntime | None = None
-        self._port = port
         self._container_process = None
-        if docker_args is None:
-            docker_args = []
-        self._docker_args = docker_args
         self._container_name = None
         self.logger = get_logger("deploy")
         self._runtime_timeout = 0.15
-        self._startup_timeout = startup_timeout
-        self._pull = pull
-        self._remove_images = remove_images
+
+    @classmethod
+    def from_config(cls, config: DockerDeploymentConfig) -> Self:
+        return cls(**config.model_dump())
 
     def _get_container_name(self) -> str:
         """Returns a unique container name based on the image name."""
-        image_name_sanitized = "".join(c for c in self._image_name if c.isalnum() or c in "-_.")
+        image_name_sanitized = "".join(c for c in self._config.image if c.isalnum() or c in "-_.")
         return f"{image_name_sanitized}-{uuid.uuid4()}"
 
     @property
@@ -123,18 +111,18 @@ class DockerDeployment(AbstractDeployment):
         ]
 
     def _pull_image(self):
-        if self._pull == "never":
+        if self._config.pull == "never":
             return
-        if self._pull == "missing" and _is_image_available(self._image_name):
+        if self._config.pull == "missing" and _is_image_available(self._config.image):
             return
-        self.logger.info(f"Pulling image {self._image_name!r}")
-        _pull_image(self._image_name)
+        self.logger.info(f"Pulling image {self._config.image!r}")
+        _pull_image(self._config.image)
 
     async def start(self):
         """Starts the runtime."""
         self._pull_image()
-        if self._port is None:
-            self._port = find_free_port()
+        if self._config.port is None:
+            self._config.port = find_free_port()
         assert self._container_name is None
         self._container_name = self._get_container_name()
         token = self._get_token()
@@ -143,24 +131,26 @@ class DockerDeployment(AbstractDeployment):
             "run",
             "--rm",
             "-p",
-            f"{self._port}:8000",
-            *self._docker_args,
+            f"{self._config.port}:8000",
+            *self._config.docker_args,
             "--name",
             self._container_name,
-            self._image_name,
+            self._config.image,
             *self._get_swerex_start_cmd(token),
         ]
         cmd_str = shlex.join(cmds)
         self.logger.info(
-            f"Starting container {self._container_name} with image {self._image_name} serving on port {self._port}"
+            f"Starting container {self._container_name} with image {self._config.image} serving on port {self._config.port}"
         )
         self.logger.debug(f"Command: {cmd_str!r}")
         # shell=True required for && etc.
         self._container_process = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        self.logger.info(f"Starting runtime at {self._port}")
-        self._runtime = RemoteRuntime(port=self._port, timeout=self._runtime_timeout, auth_token=token)
+        self.logger.info(f"Starting runtime at {self._config.port}")
+        self._runtime = RemoteRuntime.from_config(
+            RemoteRuntimeConfig(port=self._config.port, timeout=self._runtime_timeout, auth_token=token)
+        )
         t0 = time.time()
-        await self._wait_until_alive(timeout=self._startup_timeout)
+        await self._wait_until_alive(timeout=self._config.startup_timeout)
         self.logger.info(f"Runtime started in {time.time() - t0:.2f}s")
 
     async def stop(self):
@@ -172,9 +162,9 @@ class DockerDeployment(AbstractDeployment):
             self._container_process.terminate()
             self._container_process = None
         self._container_name = None
-        if self._remove_images:
-            if _is_image_available(self._image_name):
-                _remove_image(self._image_name)
+        if self._config.remove_images:
+            if _is_image_available(self._config.image):
+                _remove_image(self._config.image)
 
     @property
     def runtime(self) -> RemoteRuntime:

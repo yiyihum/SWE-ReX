@@ -3,7 +3,7 @@ import sys
 import tempfile
 import traceback
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import requests
 from pydantic import BaseModel
@@ -29,55 +29,50 @@ from swerex.runtime.abstract import (
     WriteFileResponse,
     _ExceptionTransfer,
 )
+from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.utils.log import get_logger
 from swerex.utils.wait import _wait_until_alive
 
-__all__ = ["RemoteRuntime"]
+__all__ = ["RemoteRuntime", "RemoteRuntimeConfig"]
 
 
 class RemoteRuntime(AbstractRuntime):
     def __init__(
         self,
-        *,
-        auth_token: str,
-        host: str = "http://127.0.0.1",
-        port: int | None = None,
-        timeout: float = 0.15,
+        **kwargs: Any,
     ):
         """A runtime that connects to a remote server.
 
         Args:
-            host: The host to connect to.
-            port: The port to connect to.
-            auth_token: The token to use for authentication
-            timeout: The timeout to use for requests.
+            **kwargs: Keyword arguments to pass to the `RemoteRuntimeConfig` constructor.
         """
+        self._config = RemoteRuntimeConfig(**kwargs)
         self.logger = get_logger("RR")
-        if not host.startswith("http"):
-            self.logger.warning("Host %s does not start with http, adding http://", host)
-            host = f"http://{host}"
-        self.host = host
-        self.port = port
-        self._token = auth_token
-        self._timeout = timeout
+        if not self._config.host.startswith("http"):
+            self.logger.warning("Host %s does not start with http, adding http://", self._config.host)
+            self._config.host = f"http://{self._config.host}"
+
+    @classmethod
+    def from_config(cls, config: RemoteRuntimeConfig) -> Self:
+        return cls(**config.model_dump())
 
     def _get_timeout(self, timeout: float | None = None) -> float:
         if timeout is None:
-            return self._timeout
+            return self._config.timeout
         return timeout
 
     @property
     def _headers(self) -> dict[str, str]:
         """Request headers to use for authentication."""
-        if self._token:
-            return {"X-API-Key": self._token}
+        if self._config.auth_token:
+            return {"X-API-Key": self._config.auth_token}
         return {}
 
     @property
     def _api_url(self) -> str:
-        if self.port is None:
-            return self.host
-        return f"{self.host}:{self.port}"
+        if self._config.port is None:
+            return self._config.host
+        return f"{self._config.host}:{self._config.port}"
 
     def _handle_transfer_exception(self, exc_transfer: _ExceptionTransfer) -> None:
         """Reraise exceptions that were thrown on the remote."""
@@ -119,11 +114,11 @@ class RemoteRuntime(AbstractRuntime):
             )
             return IsAliveResponse(is_alive=False, message=msg)
         except requests.RequestException:
-            msg = f"Failed to connect to {self.host}\n"
+            msg = f"Failed to connect to {self._config.host}\n"
             msg += traceback.format_exc()
             return IsAliveResponse(is_alive=False, message=msg)
         except Exception:
-            msg = f"Failed to connect to {self.host}\n"
+            msg = f"Failed to connect to {self._config.host}\n"
             msg += traceback.format_exc()
             return IsAliveResponse(is_alive=False, message=msg)
 

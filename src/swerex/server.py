@@ -24,10 +24,10 @@ from swerex.runtime.abstract import (
     WriteFileRequest,
     _ExceptionTransfer,
 )
-from swerex.runtime.local import Runtime
+from swerex.runtime.local import LocalRuntime
 
 app = FastAPI()
-runtime = Runtime()
+runtime = LocalRuntime()
 
 AUTH_TOKEN = ""
 api_key_header = APIKeyHeader(name="X-API-Key")

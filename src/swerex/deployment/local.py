@@ -1,21 +1,34 @@
+from typing import Any, Self
+
 from swerex.deployment.abstract import AbstractDeployment, DeploymentNotStartedError
+from swerex.deployment.config import LocalDeploymentConfig
 from swerex.runtime.abstract import IsAliveResponse
-from swerex.runtime.local import Runtime
+from swerex.runtime.config import LocalRuntimeConfig
+from swerex.runtime.local import LocalRuntime
 from swerex.utils.log import get_logger
 
-__all__ = ["LocalDeployment"]
+__all__ = ["LocalDeployment", "LocalDeploymentConfig"]
 
 
 class LocalDeployment(AbstractDeployment):
     def __init__(
         self,
+        **kwargs: Any,
     ):
         """The most boring of the deployment classes.
         This class does nothing but wrap around `Runtime` so you can switch out
         your deployment method.
+
+        Args:
+            **kwargs: Keyword arguments (see `LocalDeploymentConfig` for details).
         """
         self._runtime = None
         self.logger = get_logger("deploy")  # type: ignore
+        self._config = LocalDeploymentConfig(**kwargs)
+
+    @classmethod
+    def from_config(cls, config: LocalDeploymentConfig) -> Self:
+        return cls(**config.model_dump())
 
     async def is_alive(self, *, timeout: float | None = None) -> IsAliveResponse:
         """Checks if the runtime is alive. The return value can be
@@ -30,7 +43,7 @@ class LocalDeployment(AbstractDeployment):
 
     async def start(self):
         """Starts the runtime."""
-        self._runtime = Runtime()
+        self._runtime = LocalRuntime.from_config(LocalRuntimeConfig())
 
     async def stop(self):
         """Stops the runtime."""
@@ -39,7 +52,7 @@ class LocalDeployment(AbstractDeployment):
             self._runtime = None
 
     @property
-    def runtime(self) -> Runtime:
+    def runtime(self) -> LocalRuntime:
         """Returns the runtime if running.
 
         Raises:

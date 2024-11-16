@@ -1,7 +1,9 @@
-from typing import Any
+from typing import Any, Self
 
 from swerex.deployment.abstract import AbstractDeployment, DeploymentNotStartedError
+from swerex.deployment.config import RemoteDeploymentConfig
 from swerex.runtime.abstract import IsAliveResponse
+from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
 from swerex.utils.log import get_logger
 
@@ -16,11 +18,15 @@ class RemoteDeployment(AbstractDeployment):
         Then you can use this deployment to explicitly connect to your manually started runtime.
 
         Args:
-            **kwargs: Keyword arguments to pass to the `RemoteRuntime` constructor.
+            **kwargs: Keyword arguments (see `RemoteDeploymentConfig` for details).
         """
-        self._runtime_kwargs = kwargs
+        self._config = RemoteDeploymentConfig(**kwargs)
         self._runtime: RemoteRuntime | None = None
         self.logger = get_logger("grd")
+
+    @classmethod
+    def from_config(cls, config: RemoteDeploymentConfig) -> Self:
+        return cls(**config.model_dump())
 
     @property
     def runtime(self) -> RemoteRuntime:
@@ -44,8 +50,15 @@ class RemoteDeployment(AbstractDeployment):
 
     async def start(self):
         """Starts the runtime."""
-        self.logger.info(f"Starting remote runtime with {self._runtime_kwargs}")
-        self._runtime = RemoteRuntime(**self._runtime_kwargs)
+        self.logger.info("Starting remote runtime")
+        self._runtime = RemoteRuntime.from_config(
+            RemoteRuntimeConfig(
+                auth_token=self._config.auth_token,
+                host=self._config.host,
+                port=self._config.port,
+                timeout=self._config.timeout,
+            )
+        )
 
     async def stop(self):
         """Stops the runtime."""
