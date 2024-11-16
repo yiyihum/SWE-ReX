@@ -186,7 +186,8 @@ class BashSession(Session):
         r = await self._run_normal(action)
         if action.check and r.exit_code != 0:
             msg = (
-                f"Command {action.command!r} failed with exit code {r.exit_code}. " "Here is the output:\n{r.output!r}"
+                f"Command {action.command!r} failed with exit code {r.exit_code}. "
+                f"Here is the output:\n{r.output!r}"
             )
             if action.error_msg:
                 msg = f"{action.error_msg}: {msg}"
@@ -366,7 +367,7 @@ class Runtime(AbstractRuntime):
         if command.check and result.returncode != 0:
             msg = (
                 f"Command {command.command!r} failed with exit code {result.returncode}. "
-                "Stdout:\n{r.stdout!r}\nStderr:\n{r.stderr!r}"
+                f"Stdout:\n{r.stdout!r}\nStderr:\n{r.stderr!r}"
             )
             if command.error_msg:
                 msg = f"{command.error_msg}: {msg}"
