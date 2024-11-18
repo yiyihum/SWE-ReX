@@ -148,16 +148,12 @@ class BashSession(Session):
             "/bin/bash",
             encoding="utf-8",
             echo=False,
+            env={"PS1": self._ps1, "PS2": "", "PS0": ""},  # type: ignore
         )
-        time.sleep(0.1)
-        self.shell.sendline(f"echo '{self._UNIQUE_STRING}'")
-        try:
-            self.shell.expect(self._UNIQUE_STRING, timeout=1)
-        except pexpect.TIMEOUT:
-            msg = "timeout while initializing shell"
-            raise pexpect.TIMEOUT(msg)
-        output = self.shell.before
-        cmds = [f"source {path}" for path in self.request.startup_source]
+        time.sleep(0.3)
+        cmds = []
+        if self.request.startup_source:
+            cmds += [f"source {path}" for path in self.request.startup_source] + ["sleep 0.3"]
         cmds += [
             f"export PS1='{self._ps1}'",
             "export PS2=''",
@@ -165,12 +161,8 @@ class BashSession(Session):
         ]
         cmd = " ; ".join(cmds)
         self.shell.sendline(cmd)
-        try:
-            self.shell.expect(self._ps1, timeout=1)
-        except pexpect.TIMEOUT:
-            msg = "timeout while setting PS1"
-            raise pexpect.TIMEOUT(msg)
-        output += "\n---\n" + _strip_control_chars(self.shell.before)  # type: ignore
+        self.shell.expect(self._ps1, timeout=self.request.startup_timeout)
+        output = _strip_control_chars(self.shell.before)  # type: ignore
         return CreateBashSessionResponse(output=output)
 
     async def run(self, action: BashAction) -> BashObservation:
