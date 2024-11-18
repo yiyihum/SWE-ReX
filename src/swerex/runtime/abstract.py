@@ -1,5 +1,6 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -198,6 +199,9 @@ class AbstractRuntime(ABC):
 
     It keeps track of all the sessions (individual repls) that are currently open.
     """
+
+    def __init__(self, *args: Any, **kwargs: Any):
+        self.logger: logging.Logger
 
     @abstractmethod
     async def is_alive(self, *, timeout: float | None = None) -> IsAliveResponse:

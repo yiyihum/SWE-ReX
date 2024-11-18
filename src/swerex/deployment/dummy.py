@@ -1,13 +1,15 @@
+import logging
 from typing import Any, Self
 
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import DummyDeploymentConfig
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.dummy import DummyRuntime
+from swerex.utils.log import get_logger
 
 
 class DummyDeployment(AbstractDeployment):
-    def __init__(self, **kwargs: Any):
+    def __init__(self, *, logger: logging.Logger | None = None, **kwargs: Any):
         """This deployment does nothing.
         Useful for testing.
 
@@ -16,6 +18,7 @@ class DummyDeployment(AbstractDeployment):
         """
         self._config = DummyDeploymentConfig(**kwargs)
         self._runtime = DummyRuntime()  # type: ignore
+        self.logger = logger or get_logger("DummyDeployment")
 
     @classmethod
     def from_config(cls, config: DummyDeploymentConfig) -> Self:

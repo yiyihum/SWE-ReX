@@ -1,3 +1,4 @@
+import logging
 import shlex
 import subprocess
 import time
@@ -37,6 +38,8 @@ def _remove_image(image: str) -> None:
 class DockerDeployment(AbstractDeployment):
     def __init__(
         self,
+        *,
+        logger: logging.Logger | None = None,
         **kwargs: Any,
     ):
         """Deployment to local docker image.
@@ -48,7 +51,7 @@ class DockerDeployment(AbstractDeployment):
         self._runtime: RemoteRuntime | None = None
         self._container_process = None
         self._container_name = None
-        self.logger = get_logger("deploy")
+        self.logger = logger or get_logger("deploy")
         self._runtime_timeout = 0.15
 
     @classmethod

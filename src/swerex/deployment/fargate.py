@@ -1,3 +1,4 @@
+import logging
 import time
 import uuid
 from typing import Any, Self
@@ -29,13 +30,15 @@ from swerex.utils.wait import _wait_until_alive
 class FargateDeployment(AbstractDeployment):
     def __init__(
         self,
+        *,
+        logger: logging.Logger | None = None,
         **kwargs: Any,
     ):
         self._config = FargateDeploymentConfig(**kwargs)
         self._runtime: RemoteRuntime | None = None
         self._container_process = None
         self._container_name = None
-        self.logger = get_logger("deploy")
+        self.logger = logger or get_logger("deploy")
         # we need to setup ecs and ec2 to run containers
         self._cluster_arn = None
         self._execution_role_arn = None

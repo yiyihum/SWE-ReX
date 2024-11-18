@@ -1,3 +1,4 @@
+import logging
 import shutil
 import sys
 import tempfile
@@ -39,6 +40,8 @@ __all__ = ["RemoteRuntime", "RemoteRuntimeConfig"]
 class RemoteRuntime(AbstractRuntime):
     def __init__(
         self,
+        *,
+        logger: logging.Logger | None = None,
         **kwargs: Any,
     ):
         """A runtime that connects to a remote server.
@@ -47,7 +50,7 @@ class RemoteRuntime(AbstractRuntime):
             **kwargs: Keyword arguments to pass to the `RemoteRuntimeConfig` constructor.
         """
         self._config = RemoteRuntimeConfig(**kwargs)
-        self.logger = get_logger("RR")
+        self.logger = logger or get_logger("RR")
         if not self._config.host.startswith("http"):
             self.logger.warning("Host %s does not start with http, adding http://", self._config.host)
             self._config.host = f"http://{self._config.host}"

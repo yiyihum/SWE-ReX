@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Self
 
 from swerex.deployment.abstract import AbstractDeployment
@@ -14,6 +15,8 @@ __all__ = ["LocalDeployment", "LocalDeploymentConfig"]
 class LocalDeployment(AbstractDeployment):
     def __init__(
         self,
+        *,
+        logger: logging.Logger | None = None,
         **kwargs: Any,
     ):
         """The most boring of the deployment classes.
@@ -24,7 +27,7 @@ class LocalDeployment(AbstractDeployment):
             **kwargs: Keyword arguments (see `LocalDeploymentConfig` for details).
         """
         self._runtime = None
-        self.logger = get_logger("deploy")  # type: ignore
+        self.logger = logger or get_logger("deploy")
         self._config = LocalDeploymentConfig(**kwargs)
 
     @classmethod

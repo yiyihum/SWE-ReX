@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from abc import ABC, abstractmethod
 
 from swerex.runtime.abstract import AbstractRuntime, IsAliveResponse
@@ -7,6 +8,9 @@ __all__ = ["AbstractDeployment"]
 
 
 class AbstractDeployment(ABC):
+    def __init__(self, *args, **kwargs):
+        self.logger: logging.Logger
+
     @abstractmethod
     async def is_alive(self, *, timeout: float | None = None) -> IsAliveResponse:
         """Checks if the runtime is alive. The return value can be

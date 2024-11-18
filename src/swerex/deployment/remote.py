@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Self
 
 from swerex.deployment.abstract import AbstractDeployment
@@ -10,7 +11,7 @@ from swerex.utils.log import get_logger
 
 
 class RemoteDeployment(AbstractDeployment):
-    def __init__(self, **kwargs: Any):
+    def __init__(self, *, logger: logging.Logger | None = None, **kwargs: Any):
         """This deployment is only a thin wrapper around the `RemoteRuntime`.
         Use this if you have deployed a runtime somewhere else but want to interact with it
         through the `AbstractDeployment` interface.
@@ -23,7 +24,7 @@ class RemoteDeployment(AbstractDeployment):
         """
         self._config = RemoteDeploymentConfig(**kwargs)
         self._runtime: RemoteRuntime | None = None
-        self.logger = get_logger("grd")
+        self.logger = logger or get_logger("grd")
 
     @classmethod
     def from_config(cls, config: RemoteDeploymentConfig) -> Self:

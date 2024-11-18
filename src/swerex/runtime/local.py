@@ -1,3 +1,4 @@
+import logging
 import re
 import shutil
 import subprocess
@@ -122,7 +123,7 @@ class Session(ABC):
 class BashSession(Session):
     _UNIQUE_STRING = "UNIQUESTRING29234"
 
-    def __init__(self, request: CreateBashSessionRequest):
+    def __init__(self, request: CreateBashSessionRequest, *, logger: logging.Logger | None = None):
         """This basically represents one REPL that we control.
 
         It's pretty similar to a `pexpect.REPLWrapper`.
@@ -130,7 +131,7 @@ class BashSession(Session):
         self.request = request
         self._ps1 = "SHELLPS1PREFIX"
         self._shell: pexpect.spawn | None = None
-        self.logger = get_logger(f"RexS ({request.session})")
+        self.logger = logger or get_logger(f"RexS ({request.session})")
 
     @property
     def shell(self) -> pexpect.spawn:
@@ -190,8 +191,7 @@ class BashSession(Session):
         r = await self._run_normal(action)
         if action.check and r.exit_code != 0:
             msg = (
-                f"Command {action.command!r} failed with exit code {r.exit_code}. "
-                f"Here is the output:\n{r.output!r}"
+                f"Command {action.command!r} failed with exit code {r.exit_code}. " f"Here is the output:\n{r.output!r}"
             )
             if action.error_msg:
                 msg = f"{action.error_msg}: {msg}"
@@ -367,7 +367,9 @@ class LocalRuntime(AbstractRuntime):
             NonZeroExitCodeError: If the command has a non-zero exit code and `check` is True.
         """
         try:
-            result = subprocess.run(command.command, shell=command.shell, timeout=command.timeout, env=command.env, capture_output=True)
+            result = subprocess.run(
+                command.command, shell=command.shell, timeout=command.timeout, env=command.env, capture_output=True
+            )
             r = CommandResponse(
                 stdout=result.stdout.decode(errors="backslashreplace"),
                 stderr=result.stderr.decode(errors="backslashreplace"),

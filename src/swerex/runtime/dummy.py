@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Self
 
 from swerex.runtime.abstract import (
@@ -23,11 +24,14 @@ from swerex.runtime.abstract import (
     WriteFileResponse,
 )
 from swerex.runtime.config import DummyRuntimeConfig
+from swerex.utils.log import get_logger
 
 
 class DummyRuntime(AbstractRuntime):
     def __init__(
         self,
+        *,
+        logger: logging.Logger | None = None,
         **kwargs: Any,
     ):
         """This runtime does nothing.
@@ -41,6 +45,7 @@ class DummyRuntime(AbstractRuntime):
         return the same value.
         """
         self._config = DummyRuntimeConfig(**kwargs)
+        self.logger = logger or get_logger("DummyRuntime")
 
     @classmethod
     def from_config(cls, config: DummyRuntimeConfig) -> Self:
