@@ -30,8 +30,9 @@ def _get_modal_user() -> str:
 class _ImageBuilder:
     """_ImageBuilder.auto() is used by ModalDeployment"""
 
-    def __init__(self, *, logger: logging.Logger | None = None):
+    def __init__(self, *, install_pipx: bool = True, logger: logging.Logger | None = None):
         self.logger = logger or get_logger("_image_builder")
+        self._install_pipx = install_pipx
 
     def from_file(self, image: PurePath, *, build_context: PurePath | None = None) -> modal.Image:
         self.logger.info(f"Building image from file {image}")
@@ -99,7 +100,10 @@ class _ImageBuilder:
         else:
             image = self.from_registry(image_spec)  # type: ignore
 
-        return self.ensure_pipx_installed(image)
+        if self._install_pipx:
+            image = self.ensure_pipx_installed(image)
+
+        return image
 
 
 class ModalDeployment(AbstractDeployment):
@@ -114,6 +118,8 @@ class ModalDeployment(AbstractDeployment):
         startup_timeout: float = 0.4,
         runtime_timeout: float = 1800.0,
         modal_sandbox_kwargs: dict[str, Any] | None = None,
+        install_pipx: bool = True,
+        deployment_timeout: float = 1800.0,
     ):
         """Deployment for modal.com. The deployment will only start when the
         `start` method is being called.
@@ -126,9 +132,10 @@ class ModalDeployment(AbstractDeployment):
                 4. ECR image name (e.g. `123456789012.dkr.ecr.us-east-1.amazonaws.com/my-image:tag`)
             startup_timeout: The time to wait for the runtime to start.
             runtime_timeout: The runtime timeout.
+            deployment_timeout: The deployment timeout.
             modal_sandbox_kwargs: Additional arguments to pass to `modal.Sandbox.create`
         """
-        self._image = _ImageBuilder(logger=logger).auto(image)
+        self._image = _ImageBuilder(install_pipx=install_pipx, logger=logger).auto(image)
         self._runtime: RemoteRuntime | None = None
         self._startup_timeout = startup_timeout
         self._sandbox: modal.Sandbox | None = None
@@ -137,6 +144,7 @@ class ModalDeployment(AbstractDeployment):
         self._app = modal.App.lookup("swe-rex", create_if_missing=True)
         self._user = _get_modal_user()
         self._runtime_timeout = runtime_timeout
+        self._deployment_timeout = deployment_timeout
         if modal_sandbox_kwargs is None:
             modal_sandbox_kwargs = {}
         self._modal_kwargs = modal_sandbox_kwargs
@@ -145,8 +153,10 @@ class ModalDeployment(AbstractDeployment):
     def from_config(cls, config: ModalDeploymentConfig) -> Self:
         return cls(
             image=config.image,
+            install_pipx=config.install_pipx,
             startup_timeout=config.startup_timeout,
             runtime_timeout=config.runtime_timeout,
+            deployment_timeout=config.deployment_timeout,
             modal_sandbox_kwargs=config.modal_sandbox_kwargs,
         )
 
@@ -201,7 +211,7 @@ class ModalDeployment(AbstractDeployment):
             "-c",
             self._start_swerex_cmd(token),
             image=self._image,
-            timeout=int(self._runtime_timeout),
+            timeout=int(self._deployment_timeout),
             unencrypted_ports=[self._port],
             app=self._app,
             **self._modal_kwargs,

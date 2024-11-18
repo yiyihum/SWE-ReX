@@ -8,17 +8,33 @@ from swerex.deployment.abstract import AbstractDeployment
 
 class ModalDeploymentConfig(BaseModel):
     image: str | PurePath
-    """Image to use for the deployment.
-    """
-    startup_timeout: float = 0.4
+    """Image to use for the deployment."""
+
+    startup_timeout: float = 180.0
     """The time to wait for the runtime to start."""
-    runtime_timeout: float = 1800.0
-    """The runtime timeout."""
+
+    runtime_timeout: float = 60.0
+    """Runtime timeout (default timeout for all runtime requests)
+    """
+
+    deployment_timeout: float = 1800.0
+    """Kill deployment after this many seconds no matter what.
+    This is a useful killing switch to ensure that you don't spend too 
+    much money on modal.
+    """
+
     modal_sandbox_kwargs: dict[str, Any] = {}
     """Additional arguments to pass to `modal.Sandbox.create`"""
 
     type: Literal["modal"] = "modal"
     """Discriminator for (de)serialization/CLI. Do not change."""
+
+    install_pipx: bool = True
+    """Whether to install pipx with apt in the container.
+    This is enabled by default so we can fall back to installing swe-rex
+    with pipx if the image does not have it. However, depending on your image,
+    installing pipx might fail (or be slow).
+    """
 
     model_config = ConfigDict(extra="forbid")
 
