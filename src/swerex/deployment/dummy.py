@@ -17,8 +17,8 @@ class DummyDeployment(AbstractDeployment):
             **kwargs: Keyword arguments (see `DummyDeploymentConfig` for details).
         """
         self._config = DummyDeploymentConfig(**kwargs)
-        self._runtime = DummyRuntime()  # type: ignore
         self.logger = logger or get_logger("DummyDeployment")
+        self._runtime = DummyRuntime(logger=self.logger)  # type: ignore
 
     @classmethod
     def from_config(cls, config: DummyDeploymentConfig) -> Self:

@@ -15,7 +15,6 @@ from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import ModalDeploymentConfig
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
-from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
 from swerex.utils.log import get_logger
 from swerex.utils.wait import _wait_until_alive
@@ -214,8 +213,8 @@ class ModalDeployment(AbstractDeployment):
         self.logger.info(f"Sandbox created with id {self._sandbox.object_id}")
         await asyncio.sleep(1)
         self.logger.info(f"Starting runtime at {tunnel.url}")
-        self._runtime = RemoteRuntime.from_config(
-            RemoteRuntimeConfig(host=tunnel.url, timeout=self._runtime_timeout, auth_token=token)
+        self._runtime = RemoteRuntime(
+            host=tunnel.url, timeout=self._runtime_timeout, auth_token=token, logger=self.logger
         )
         remaining_startup_timeout = max(0, self._startup_timeout - elapsed_sandbox_creation)
         t1 = time.time()

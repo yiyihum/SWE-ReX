@@ -5,7 +5,6 @@ from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import RemoteDeploymentConfig
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
-from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
 from swerex.utils.log import get_logger
 
@@ -53,13 +52,12 @@ class RemoteDeployment(AbstractDeployment):
     async def start(self):
         """Starts the runtime."""
         self.logger.info("Starting remote runtime")
-        self._runtime = RemoteRuntime.from_config(
-            RemoteRuntimeConfig(
-                auth_token=self._config.auth_token,
-                host=self._config.host,
-                port=self._config.port,
-                timeout=self._config.timeout,
-            )
+        self._runtime = RemoteRuntime(
+            auth_token=self._config.auth_token,
+            host=self._config.host,
+            port=self._config.port,
+            timeout=self._config.timeout,
+            logger=self.logger,
         )
 
     async def stop(self):

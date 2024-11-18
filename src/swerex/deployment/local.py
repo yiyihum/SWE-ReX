@@ -5,7 +5,6 @@ from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import LocalDeploymentConfig
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
-from swerex.runtime.config import LocalRuntimeConfig
 from swerex.runtime.local import LocalRuntime
 from swerex.utils.log import get_logger
 
@@ -47,7 +46,7 @@ class LocalDeployment(AbstractDeployment):
 
     async def start(self):
         """Starts the runtime."""
-        self._runtime = LocalRuntime.from_config(LocalRuntimeConfig())
+        self._runtime = LocalRuntime(logger=self.logger)
 
     async def stop(self):
         """Stops the runtime."""

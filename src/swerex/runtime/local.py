@@ -307,7 +307,7 @@ class BashSession(Session):
 
 
 class LocalRuntime(AbstractRuntime):
-    def __init__(self, **kwargs: Any):
+    def __init__(self, *, logger: logging.Logger | None = None, **kwargs: Any):
         """A Runtime that runs locally and actually executes commands in a shell.
         If you are deploying to Modal/Fargate/etc., this class will be running within the docker container
         on Modal/Fargate/etc.
@@ -317,6 +317,7 @@ class LocalRuntime(AbstractRuntime):
         """
         self._config = LocalRuntimeConfig(**kwargs)
         self._sessions: dict[str, Session] = {}
+        self.logger = logger or get_logger("LocalRuntime")
 
     @classmethod
     def from_config(cls, config: LocalRuntimeConfig) -> Self:

@@ -10,7 +10,6 @@ from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import FargateDeploymentConfig
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
-from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
 from swerex.utils.aws import (
     get_cloudwatch_log_url,
@@ -151,9 +150,7 @@ class FargateDeployment(AbstractDeployment):
                 self.logger.warning(f"Failed to get CloudWatch Logs URL: {str(e)}")
         public_ip = get_public_ip(self._task_arn, self._cluster_arn)
         self.logger.info(f"Container public IP: {public_ip}")
-        self._runtime = RemoteRuntime.from_config(
-            RemoteRuntimeConfig(host=public_ip, port=self._config.port, auth_token=token)
-        )
+        self._runtime = RemoteRuntime(host=public_ip, port=self._config.port, auth_token=token, logger=self.logger)
         t0 = time.time()
         await self._wait_until_alive(timeout=self._config.runtime_timeout)
         self.logger.info(f"Runtime started in {time.time() - t0:.2f}s")
