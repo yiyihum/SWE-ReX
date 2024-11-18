@@ -9,7 +9,7 @@ class SetStatusDeploymentHook(DeploymentHook):
         self._id = id
 
     def _update(self, message: str):
-        self._callable(f"{self._id}: {message}")
+        self._callable(self._id, message)
 
     def on_custom_step(self, message: str):
         self._update(message)
