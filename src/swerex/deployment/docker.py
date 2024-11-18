@@ -27,12 +27,12 @@ def _is_image_available(image: str) -> bool:
         return False
 
 
-def _pull_image(image: str) -> None:
-    subprocess.check_call(["docker", "pull", image])
+def _pull_image(image: str) -> bytes:
+    return subprocess.check_output(["docker", "pull", image])
 
 
-def _remove_image(image: str) -> None:
-    subprocess.check_call(["docker", "rmi", image])
+def _remove_image(image: str) -> bytes:
+    return subprocess.check_output(["docker", "rmi", image])
 
 
 class DockerDeployment(AbstractDeployment):
@@ -105,7 +105,6 @@ class DockerDeployment(AbstractDeployment):
     def _get_swerex_start_cmd(self, token: str) -> list[str]:
         rex_args = f"--auth-token {token}"
         pipx_install = "python3 -m pip install pipx && python3 -m pipx ensurepath"
-        # todo: update
         # Need to wrap with /bin/sh -c to avoid having '&&' interpreted by the parent shell
         return [
             "/bin/sh",
@@ -114,13 +113,14 @@ class DockerDeployment(AbstractDeployment):
             f"{REMOTE_EXECUTABLE_NAME} {rex_args} || ({pipx_install} && pipx run {PACKAGE_NAME} {rex_args})",
         ]
 
-    def _pull_image(self):
+    def _pull_image(self) -> None:
         if self._config.pull == "never":
             return
         if self._config.pull == "missing" and _is_image_available(self._config.image):
             return
         self.logger.info(f"Pulling image {self._config.image!r}")
-        _pull_image(self._config.image)
+        pull_output = _pull_image(self._config.image)
+        self.logger.info(pull_output.decode())
 
     async def start(self):
         """Starts the runtime."""
@@ -178,7 +178,9 @@ class DockerDeployment(AbstractDeployment):
 
         if self._config.remove_images:
             if _is_image_available(self._config.image):
-                _remove_image(self._config.image)
+                self.logger.info(f"Removing image {self._config.image}")
+                remove_output = _remove_image(self._config.image)
+                self.logger.debug(remove_output.decode())
 
     @property
     def runtime(self) -> RemoteRuntime:
