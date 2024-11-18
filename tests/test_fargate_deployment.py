@@ -5,6 +5,7 @@ import pytest
 from swerex.deployment.fargate import FargateDeployment
 
 
+@pytest.mark.cloud
 @pytest.mark.slow
 @pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Skipping modal tests in github actions")
 async def test_fargate_deployment():
@@ -20,6 +21,7 @@ async def test_fargate_deployment():
     await d.stop()
 
 
+@pytest.mark.cloud
 @pytest.mark.slow
 @pytest.mark.skipif(os.getenv("GITHUB_ACTIONS") == "true", reason="Skipping modal tests in github actions")
 async def test_fargate_deployment_ubuntu_base():

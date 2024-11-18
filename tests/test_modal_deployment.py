@@ -5,6 +5,7 @@ import pytest
 from swerex.deployment.modal import ModalDeployment, _ImageBuilder
 
 
+@pytest.mark.cloud
 @pytest.mark.slow
 async def test_modal_deployment_from_docker_with_swerex_installed():
     dockerfile = Path(__file__).parent / "swe_rex_test.Dockerfile"
@@ -17,6 +18,7 @@ async def test_modal_deployment_from_docker_with_swerex_installed():
     await d.stop()
 
 
+@pytest.mark.cloud
 @pytest.mark.slow
 async def test_modal_deployment_from_docker_string():
     d = ModalDeployment(image="python:3.11-slim", startup_timeout=60)
