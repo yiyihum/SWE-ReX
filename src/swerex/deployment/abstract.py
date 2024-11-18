@@ -2,6 +2,7 @@ import asyncio
 import logging
 from abc import ABC, abstractmethod
 
+from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import AbstractRuntime, IsAliveResponse
 
 __all__ = ["AbstractDeployment"]
@@ -39,5 +40,20 @@ class AbstractDeployment(ABC):
 
     def __del__(self):
         """Stops the runtime when the object is deleted."""
-        print("Stopping runtime because Deployment object is deleted")
-        asyncio.run(self.stop())
+        try:
+            is_closed = not self.is_alive().is_alive
+        except DeploymentNotStartedError:
+            return
+        if is_closed:
+            return
+        # Need to be check whether we are in an async event loop or not
+        # https://stackoverflow.com/questions/54770360/
+        self.logger.warning("Stopping runtime because Deployment object is deleted")
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                loop.create_task(self.stop())
+            else:
+                loop.run_until_complete(self.stop())
+        except Exception:
+            pass
