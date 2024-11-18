@@ -87,11 +87,13 @@ class RemoteRuntime(AbstractRuntime):
             if module not in sys.modules:
                 self.logger.warning("Module %s not in sys.modules, trying to import it", module)
                 __import__(module)
-            exception = getattr(sys.modules[module], exc_name)
+            exception = getattr(sys.modules[module], exc_name)(exc_transfer.message)
+            exception.extra_info = exc_transfer.extra_info
         except AttributeError:
             self.logger.error(f"Unknown exception class: {exc_transfer.class_path!r}")
-            raise SweRexception(exc_transfer.message) from None
-        raise exception(exc_transfer.message) from None
+            exc = SweRexception(exc_transfer.message)
+            raise exc from None
+        raise exception from None
 
     def _handle_response_errors(self, response: requests.Response) -> None:
         """Raise exceptions found in the request response."""

@@ -54,8 +54,12 @@ async def exception_handler(request: Request, exc: Exception):
     """
     if isinstance(exc, (HTTPException, StarletteHTTPException)):
         return await http_exception_handler(request, exc)
+    extra_info = getattr(exc, "extra_info", {})
     _exc = _ExceptionTransfer(
-        message=str(exc), class_path=type(exc).__module__ + "." + type(exc).__name__, traceback=traceback.format_exc()
+        message=str(exc),
+        class_path=type(exc).__module__ + "." + type(exc).__name__,
+        traceback=traceback.format_exc(),
+        extra_info=extra_info,
     )
     return JSONResponse(status_code=511, content={"swerexception": _exc.model_dump()})
 

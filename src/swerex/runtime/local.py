@@ -107,7 +107,8 @@ def _check_bash_command(command: str) -> None:
         f"Error (exit code {result.returncode}) while checking bash command \n{command!r}\n"
         f"---- Stderr ----\n{stderr}\n---- Stdout ----\n{stdout}"
     )
-    raise BashIncorrectSyntaxError(msg)
+    exc = BashIncorrectSyntaxError(msg, extra_info={"bash_stdout": stdout, "bash_stderr": stderr})
+    raise exc
 
 
 class Session(ABC):

@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class SweRexception(Exception):
     """Any exception that is raised by SWE-Rex."""
 
@@ -14,6 +17,12 @@ class BashIncorrectSyntaxError(SweRexception, RuntimeError):
     """Before running a bash command, we check for syntax errors.
     This is the error message for those syntax errors.
     """
+
+    def __init__(self, message: str, *, extra_info: dict[str, Any] = None):
+        super().__init__(message)
+        if extra_info is None:
+            extra_info = {}
+        self.extra_info = extra_info
 
 
 class CommandTimeoutError(SweRexception, RuntimeError, TimeoutError): ...

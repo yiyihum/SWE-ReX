@@ -281,5 +281,8 @@ async def test_fail_bashlex_errors(runtime_with_default_session: RemoteRuntime):
 
 
 async def test_check_bash_command_invalid(runtime_with_default_session: RemoteRuntime):
-    with pytest.raises(BashIncorrectSyntaxError):
+    with pytest.raises(BashIncorrectSyntaxError) as e:
         await runtime_with_default_session.run_in_session(A(command="(a"))
+    print(e.value.extra_info)
+    assert "bash_stdout" in e.value.extra_info
+    assert "bash_stderr" in e.value.extra_info

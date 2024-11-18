@@ -193,6 +193,8 @@ class _ExceptionTransfer(BaseModel):
     class_path: str = ""
     traceback: str = ""
 
+    extra_info: dict[str, Any] = {}
+
 
 class AbstractRuntime(ABC):
     """This is the main entry point for running stuff.
