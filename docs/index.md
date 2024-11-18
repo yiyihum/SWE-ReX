@@ -16,7 +16,7 @@ In the past several months, a common request in both [SWE-agent](https://github.
 
 Building support for multiple environments into SWE-agent directly can get messy, particularly when entangled with the core SWE-agent logic. It's a hassle to maintain, and it's hard to keep track of what works where.
 
-So we separate the two concerns: SWE-agent focuses on the Agent Computer Interface (ACI) and LM, and SWE-ReX focuses on the infrastructure.
+So we're separating these two components: SWE-agent focuses on the Agent Computer Interface (ACI) and LM, and SWE-ReX focuses on the infrastructure.
 
 SWE-ReX is a simple interface that allows for running commands on a number of different machines and compute services, including:
 
