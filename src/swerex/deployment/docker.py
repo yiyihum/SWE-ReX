@@ -162,10 +162,20 @@ class DockerDeployment(AbstractDeployment):
         if self._runtime is not None:
             await self._runtime.close()
             self._runtime = None
+
         if self._container_process is not None:
-            self._container_process.terminate()
+            try:
+                subprocess.check_call(
+                    ["docker", "kill", self._container_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+            except subprocess.CalledProcessError:
+                self.logger.warning(f"Failed to kill container {self._container_name}")
+            self._container_process.kill()
+            self._container_process.wait()
+
             self._container_process = None
-        self._container_name = None
+            self._container_name = None
+
         if self._config.remove_images:
             if _is_image_available(self._config.image):
                 _remove_image(self._config.image)
