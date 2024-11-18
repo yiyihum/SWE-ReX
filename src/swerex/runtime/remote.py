@@ -4,10 +4,11 @@ import sys
 import tempfile
 import traceback
 from pathlib import Path
-from typing import Any, Self
+from typing import Any
 
 import requests
 from pydantic import BaseModel
+from typing_extensions import Self
 
 from swerex.exceptions import SweRexception
 from swerex.runtime.abstract import (

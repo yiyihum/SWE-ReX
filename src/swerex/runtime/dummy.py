@@ -1,5 +1,7 @@
 import logging
-from typing import Any, Self
+from typing import Any
+
+from typing_extensions import Self
 
 from swerex.runtime.abstract import (
     AbstractRuntime,

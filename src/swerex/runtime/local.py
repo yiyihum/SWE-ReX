@@ -5,12 +5,13 @@ import subprocess
 import time
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Self
+from typing import Any
 
 import bashlex
 import bashlex.ast
 import bashlex.errors
 import pexpect
+from typing_extensions import Self
 
 from swerex.exceptions import (
     BashIncorrectSyntaxError,

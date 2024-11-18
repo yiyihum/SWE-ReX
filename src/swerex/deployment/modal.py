@@ -4,11 +4,12 @@ import os
 import time
 import uuid
 from pathlib import Path, PurePath
-from typing import Any, Self
+from typing import Any
 
 import boto3
 import modal
 from botocore.exceptions import NoCredentialsError
+from typing_extensions import Self
 
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment

@@ -1,5 +1,7 @@
 import logging
-from typing import Any, Self
+from typing import Any
+
+from typing_extensions import Self
 
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import DummyDeploymentConfig

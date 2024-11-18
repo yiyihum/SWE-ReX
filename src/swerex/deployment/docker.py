@@ -3,7 +3,9 @@ import shlex
 import subprocess
 import time
 import uuid
-from typing import Any, Self
+from typing import Any
+
+from typing_extensions import Self
 
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment
