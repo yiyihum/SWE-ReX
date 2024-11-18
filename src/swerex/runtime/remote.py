@@ -84,6 +84,9 @@ class RemoteRuntime(AbstractRuntime):
             print("Traceback: ", exc_transfer.traceback, file=sys.stderr)
         try:
             module, _, exc_name = exc_transfer.class_path.rpartition(".")
+            if module not in sys.modules:
+                self.logger.warning("Module %s not in sys.modules, trying to import it", module)
+                __import__(module)
             exception = getattr(sys.modules[module], exc_name)
         except AttributeError:
             self.logger.error(f"Unknown exception class: {exc_transfer.class_path!r}")
