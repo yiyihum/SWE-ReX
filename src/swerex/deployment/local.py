@@ -3,6 +3,7 @@ from typing import Any, Self
 
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import LocalDeploymentConfig
+from swerex.deployment.hooks.abstract import CombinedDeploymentHook, DeploymentHook
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.local import LocalRuntime
@@ -28,6 +29,10 @@ class LocalDeployment(AbstractDeployment):
         self._runtime = None
         self.logger = logger or get_logger("deploy")
         self._config = LocalDeploymentConfig(**kwargs)
+        self._hooks = CombinedDeploymentHook()
+
+    def add_hook(self, hook: DeploymentHook):
+        self._hooks.add_hook(hook)
 
     @classmethod
     def from_config(cls, config: LocalDeploymentConfig) -> Self:

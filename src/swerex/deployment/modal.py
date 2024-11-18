@@ -13,6 +13,7 @@ from botocore.exceptions import NoCredentialsError
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import ModalDeploymentConfig
+from swerex.deployment.hooks.abstract import CombinedDeploymentHook, DeploymentHook
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.remote import RemoteRuntime
@@ -148,6 +149,10 @@ class ModalDeployment(AbstractDeployment):
         if modal_sandbox_kwargs is None:
             modal_sandbox_kwargs = {}
         self._modal_kwargs = modal_sandbox_kwargs
+        self._hooks = CombinedDeploymentHook()
+
+    def add_hook(self, hook: DeploymentHook):
+        self._hooks.add_hook(hook)
 
     @classmethod
     def from_config(cls, config: ModalDeploymentConfig) -> Self:
@@ -204,6 +209,7 @@ class ModalDeployment(AbstractDeployment):
     ):
         """Starts the runtime."""
         self.logger.info("Starting modal sandbox")
+        self._hooks.on_custom_step("Starting modal sandbox")
         t0 = time.time()
         token = self._get_token()
         self._sandbox = modal.Sandbox.create(
@@ -223,6 +229,7 @@ class ModalDeployment(AbstractDeployment):
         self.logger.info(f"Sandbox created with id {self._sandbox.object_id}")
         await asyncio.sleep(1)
         self.logger.info(f"Starting runtime at {tunnel.url}")
+        self._hooks.on_custom_step("Starting runtime")
         self._runtime = RemoteRuntime(
             host=tunnel.url, timeout=self._runtime_timeout, auth_token=token, logger=self.logger
         )

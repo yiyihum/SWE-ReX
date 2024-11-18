@@ -8,6 +8,7 @@ import boto3
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import FargateDeploymentConfig
+from swerex.deployment.hooks.abstract import CombinedDeploymentHook, DeploymentHook
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.remote import RemoteRuntime
@@ -45,6 +46,10 @@ class FargateDeployment(AbstractDeployment):
         self._subnet_id = None
         self._task_arn = None
         self._security_group_id = None
+        self._hooks = CombinedDeploymentHook()
+
+    def add_hook(self, hook: DeploymentHook):
+        self._hooks.add_hook(hook)
 
     @classmethod
     def from_config(cls, config: FargateDeploymentConfig) -> Self:

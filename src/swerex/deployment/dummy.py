@@ -3,6 +3,7 @@ from typing import Any, Self
 
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import DummyDeploymentConfig
+from swerex.deployment.hooks.abstract import CombinedDeploymentHook, DeploymentHook
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.dummy import DummyRuntime
 from swerex.utils.log import get_logger
@@ -19,6 +20,10 @@ class DummyDeployment(AbstractDeployment):
         self._config = DummyDeploymentConfig(**kwargs)
         self.logger = logger or get_logger("DummyDeployment")
         self._runtime = DummyRuntime(logger=self.logger)  # type: ignore
+        self._hooks = CombinedDeploymentHook()
+
+    def add_hook(self, hook: DeploymentHook):
+        self._hooks.add_hook(hook)
 
     @classmethod
     def from_config(cls, config: DummyDeploymentConfig) -> Self:

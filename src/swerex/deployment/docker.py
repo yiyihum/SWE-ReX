@@ -8,6 +8,7 @@ from typing import Any, Self
 from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import DockerDeploymentConfig
+from swerex.deployment.hooks.abstract import CombinedDeploymentHook, DeploymentHook
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.config import RemoteRuntimeConfig
@@ -53,6 +54,10 @@ class DockerDeployment(AbstractDeployment):
         self._container_name = None
         self.logger = logger or get_logger("deploy")
         self._runtime_timeout = 0.15
+        self._hooks = CombinedDeploymentHook()
+
+    def add_hook(self, hook: DeploymentHook):
+        self._hooks.add_hook(hook)
 
     @classmethod
     def from_config(cls, config: DockerDeploymentConfig) -> Self:

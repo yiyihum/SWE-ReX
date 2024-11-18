@@ -3,6 +3,7 @@ from typing import Any, Self
 
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import RemoteDeploymentConfig
+from swerex.deployment.hooks.abstract import CombinedDeploymentHook, DeploymentHook
 from swerex.exceptions import DeploymentNotStartedError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.remote import RemoteRuntime
@@ -24,6 +25,10 @@ class RemoteDeployment(AbstractDeployment):
         self._config = RemoteDeploymentConfig(**kwargs)
         self._runtime: RemoteRuntime | None = None
         self.logger = logger or get_logger("grd")
+        self._hooks = CombinedDeploymentHook()
+
+    def add_hook(self, hook: DeploymentHook):
+        self._hooks.add_hook(hook)
 
     @classmethod
     def from_config(cls, config: RemoteDeploymentConfig) -> Self:
