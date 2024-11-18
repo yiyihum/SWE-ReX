@@ -15,6 +15,8 @@
 pip install -e .
 # With modal support
 pip install -e '.[modal]'
+# With fargate support
+pip install -e '.[fargate]'
 # Development setup (all optional dependencies)
 pip install -e '.[dev]'
 ```

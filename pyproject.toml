@@ -50,9 +50,13 @@ dev = [
     "pytest-asyncio",
     "griffe-pydantic",
     "swerex[modal]",
+    "swerex[fargate]",
 ]
 modal = [
     "modal",
+    "boto3",
+]
+fargate = [
     "boto3",
 ]
 
