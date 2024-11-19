@@ -100,10 +100,10 @@ class DockerDeployment(AbstractDeployment):
             return await _wait_until_alive(self.is_alive, timeout=timeout, function_timeout=self._runtime_timeout)
         except TimeoutError as e:
             self.logger.error("Runtime did not start within timeout. Here's the output from the container process.")
-            assert self._container_process is not None
-            self._container_process.terminate()
             self.logger.error(self._container_process.stdout.read().decode())  # type: ignore
             self.logger.error(self._container_process.stderr.read().decode())  # type: ignore
+            assert self._container_process is not None
+            await self.stop()
             raise e
 
     def _get_token(self) -> str:
@@ -126,6 +126,7 @@ class DockerDeployment(AbstractDeployment):
         if self._config.pull == "missing" and _is_image_available(self._config.image):
             return
         self.logger.info(f"Pulling image {self._config.image!r}")
+        self._hooks.on_custom_step("Pulling docker image")
         pull_output = _pull_image(self._config.image)
         self.logger.info(pull_output.decode())
 
@@ -156,6 +157,7 @@ class DockerDeployment(AbstractDeployment):
         self.logger.debug(f"Command: {cmd_str!r}")
         # shell=True required for && etc.
         self._container_process = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self._hooks.on_custom_step("Starting runtime")
         self.logger.info(f"Starting runtime at {self._config.port}")
         self._runtime = RemoteRuntime.from_config(
             RemoteRuntimeConfig(port=self._config.port, timeout=self._runtime_timeout, auth_token=token)
