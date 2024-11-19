@@ -33,7 +33,7 @@ class _ImageBuilder:
     """_ImageBuilder.auto() is used by ModalDeployment"""
 
     def __init__(self, *, install_pipx: bool = True, logger: logging.Logger | None = None):
-        self.logger = logger or get_logger("_image_builder")
+        self.logger = logger or get_logger("rex_image_builder")
         self._install_pipx = install_pipx
 
     def from_file(self, image: PurePath, *, build_context: PurePath | None = None) -> modal.Image:
@@ -142,7 +142,7 @@ class ModalDeployment(AbstractDeployment):
         self._startup_timeout = startup_timeout
         self._sandbox: modal.Sandbox | None = None
         self._port = 8880
-        self.logger = logger or get_logger("deploy")
+        self.logger = logger or get_logger("rex-deploy")
         self._app = modal.App.lookup("swe-rex", create_if_missing=True)
         self._user = _get_modal_user()
         self._runtime_timeout = runtime_timeout

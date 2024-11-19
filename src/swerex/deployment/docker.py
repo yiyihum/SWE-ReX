@@ -3,6 +3,7 @@ import shlex
 import subprocess
 import time
 import uuid
+from threading import Lock
 from typing import Any
 
 from typing_extensions import Self
@@ -19,11 +20,10 @@ from swerex.utils.free_port import find_free_port
 from swerex.utils.log import get_logger
 from swerex.utils.wait import _wait_until_alive
 
-from threading import Lock
-
 __all__ = ["DockerDeployment", "DockerDeploymentConfig"]
 
 _FREE_PORT_LOCK = Lock()
+
 
 def _is_image_available(image: str) -> bool:
     try:
@@ -57,7 +57,7 @@ class DockerDeployment(AbstractDeployment):
         self._runtime: RemoteRuntime | None = None
         self._container_process = None
         self._container_name = None
-        self.logger = logger or get_logger("deploy")
+        self.logger = logger or get_logger("rex-deploy")
         self._runtime_timeout = 0.15
         self._hooks = CombinedDeploymentHook()
 

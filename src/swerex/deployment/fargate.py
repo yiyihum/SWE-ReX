@@ -39,7 +39,7 @@ class FargateDeployment(AbstractDeployment):
         self._runtime: RemoteRuntime | None = None
         self._container_process = None
         self._container_name = None
-        self.logger = logger or get_logger("deploy")
+        self.logger = logger or get_logger("rex-deploy")
         # we need to setup ecs and ec2 to run containers
         self._cluster_arn = None
         self._execution_role_arn = None

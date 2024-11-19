@@ -20,7 +20,7 @@ class DummyDeployment(AbstractDeployment):
             **kwargs: Keyword arguments (see `DummyDeploymentConfig` for details).
         """
         self._config = DummyDeploymentConfig(**kwargs)
-        self.logger = logger or get_logger("DummyDeployment")
+        self.logger = logger or get_logger("rex-deploy")
         self._runtime = DummyRuntime(logger=self.logger)  # type: ignore
         self._hooks = CombinedDeploymentHook()
 

@@ -47,7 +47,7 @@ class DummyRuntime(AbstractRuntime):
         return the same value.
         """
         self._config = DummyRuntimeConfig(**kwargs)
-        self.logger = logger or get_logger("DummyRuntime")
+        self.logger = logger or get_logger("rex-runtime")
 
     @classmethod
     def from_config(cls, config: DummyRuntimeConfig) -> Self:

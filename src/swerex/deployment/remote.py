@@ -26,7 +26,7 @@ class RemoteDeployment(AbstractDeployment):
         """
         self._config = RemoteDeploymentConfig(**kwargs)
         self._runtime: RemoteRuntime | None = None
-        self.logger = logger or get_logger("grd")
+        self.logger = logger or get_logger("rex-deploy")
         self._hooks = CombinedDeploymentHook()
 
     def add_hook(self, hook: DeploymentHook):

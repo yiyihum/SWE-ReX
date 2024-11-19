@@ -29,7 +29,7 @@ class LocalDeployment(AbstractDeployment):
             **kwargs: Keyword arguments (see `LocalDeploymentConfig` for details).
         """
         self._runtime = None
-        self.logger = logger or get_logger("deploy")
+        self.logger = logger or get_logger("rex-deploy")
         self._config = LocalDeploymentConfig(**kwargs)
         self._hooks = CombinedDeploymentHook()
 

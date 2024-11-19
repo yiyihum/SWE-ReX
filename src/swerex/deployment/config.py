@@ -51,7 +51,7 @@ class DockerDeploymentConfig(BaseModel):
     """The port that the docker container connects to. If None, a free port is found."""
     docker_args: list[str] = []
     """Additional arguments to pass to the docker run command."""
-    startup_timeout: float = 60.0
+    startup_timeout: float = 180.0
     """The time to wait for the runtime to start."""
     pull: Literal["never", "always", "missing"] = "missing"
     """When to pull docker images."""

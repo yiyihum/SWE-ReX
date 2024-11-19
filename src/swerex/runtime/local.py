@@ -133,7 +133,7 @@ class BashSession(Session):
         self.request = request
         self._ps1 = "SHELLPS1PREFIX"
         self._shell: pexpect.spawn | None = None
-        self.logger = logger or get_logger(f"RexS ({request.session})")
+        self.logger = logger or get_logger("rex-session")
 
     @property
     def shell(self) -> pexpect.spawn:
@@ -311,7 +311,7 @@ class LocalRuntime(AbstractRuntime):
         """
         self._config = LocalRuntimeConfig(**kwargs)
         self._sessions: dict[str, Session] = {}
-        self.logger = logger or get_logger("LocalRuntime")
+        self.logger = logger or get_logger("rex-runtime")
 
     @classmethod
     def from_config(cls, config: LocalRuntimeConfig) -> Self:

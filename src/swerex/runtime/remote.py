@@ -51,7 +51,7 @@ class RemoteRuntime(AbstractRuntime):
             **kwargs: Keyword arguments to pass to the `RemoteRuntimeConfig` constructor.
         """
         self._config = RemoteRuntimeConfig(**kwargs)
-        self.logger = logger or get_logger("RR")
+        self.logger = logger or get_logger("rex-runtime")
         if not self._config.host.startswith("http"):
             self.logger.warning("Host %s does not start with http, adding http://", self._config.host)
             self._config.host = f"http://{self._config.host}"
