@@ -7,7 +7,7 @@ from swerex.deployment.abstract import AbstractDeployment
 
 
 class ModalDeploymentConfig(BaseModel):
-    image: str | PurePath
+    image: str | PurePath = "python:3.11"
     """Image to use for the deployment."""
 
     startup_timeout: float = 180.0
@@ -45,7 +45,7 @@ class ModalDeploymentConfig(BaseModel):
 
 
 class DockerDeploymentConfig(BaseModel):
-    image: str
+    image: str = "python:3.11"
     """The name of the docker image to use."""
     port: int | None = None
     """The port that the docker container connects to. If None, a free port is found."""
@@ -82,7 +82,7 @@ class DummyDeploymentConfig(BaseModel):
 
 
 class FargateDeploymentConfig(BaseModel):
-    image: str
+    image: str = "python:3.11"
     port: int = 8880
     cluster_name: str = "swe-rex-cluster"
     execution_role_prefix: str = "swe-rex-execution-role"
