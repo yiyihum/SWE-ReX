@@ -151,6 +151,9 @@ class Command(BaseModel):
     env: dict[str, str] | None = None
     """Environment variables to pass to the command."""
 
+    cwd: str | None = None
+    """The current working directory to run the command in."""
+
 
 class CommandResponse(BaseModel):
     stdout: str = ""

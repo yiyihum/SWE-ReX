@@ -363,7 +363,12 @@ class LocalRuntime(AbstractRuntime):
         """
         try:
             result = subprocess.run(
-                command.command, shell=command.shell, timeout=command.timeout, env=command.env, capture_output=True
+                command.command,
+                shell=command.shell,
+                timeout=command.timeout,
+                env=command.env,
+                capture_output=True,
+                cwd=command.cwd,
             )
             r = CommandResponse(
                 stdout=result.stdout.decode(errors="backslashreplace"),
