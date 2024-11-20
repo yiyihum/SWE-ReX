@@ -1,1 +1,1 @@
-::: swerex.runtime.local.Runtime
+::: swerex.runtime.local.LocalRuntime
