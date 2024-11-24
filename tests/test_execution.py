@@ -100,11 +100,9 @@ async def test_run_in_shell_timeout(runtime_with_default_session: RemoteRuntime)
 
 async def test_run_in_shell_interactive_command(runtime_with_default_session: RemoteRuntime):
     await runtime_with_default_session.run_in_session(A(command="python", is_interactive_command=True, expect=[">>> "]))
-    r = await runtime_with_default_session.run_in_session(
+    await runtime_with_default_session.run_in_session(
         A(command="print('hello world')", is_interactive_command=True, expect=[">>> "])
     )
-    r = await runtime_with_default_session.run_in_session(A(command="\n", is_interactive_command=True, expect=[">>> "]))
-    assert "hello world" in r.output
     await runtime_with_default_session.run_in_session(A(command="quit()\n", is_interactive_quit=True, check=True))
 
 

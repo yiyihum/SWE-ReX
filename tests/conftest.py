@@ -2,14 +2,13 @@ import asyncio
 import socket
 import threading
 import time
-from collections.abc import AsyncGenerator, Generator
+from collections.abc import Generator
 from dataclasses import dataclass, field
 
 import pytest
 import uvicorn
 
 import swerex.server
-from swerex.deployment.docker import DockerDeployment
 from swerex.runtime.abstract import (
     BashAction,
     CloseBashSessionRequest,
@@ -55,17 +54,11 @@ def remote_server() -> RemoteServer:
     return RemoteServer(port)
 
 
-@pytest.fixture(scope="session")
-async def docker_deployment() -> AsyncGenerator[DockerDeployment, None]:
-    d = DockerDeployment()
-    await d.start()
-    yield d
-    await d.stop()
-
-
 @pytest.fixture
-def remote_runtime(docker_deployment: DockerDeployment) -> RemoteRuntime:
-    return docker_deployment.runtime
+def remote_runtime(remote_server: RemoteServer) -> Generator[RemoteRuntime, None]:
+    r = RemoteRuntime(port=remote_server.port, auth_token=TEST_API_KEY)
+    yield r
+    asyncio.run(r.close())
 
 
 @pytest.fixture
