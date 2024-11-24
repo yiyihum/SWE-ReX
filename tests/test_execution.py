@@ -10,6 +10,7 @@ from swerex.exceptions import (
     SessionDoesNotExistError,
 )
 from swerex.runtime.abstract import (
+    BashInterruptAction,
     CloseBashSessionRequest,
     CreateBashSessionRequest,
     ReadFileRequest,
@@ -286,3 +287,18 @@ async def test_check_bash_command_invalid(runtime_with_default_session: RemoteRu
     print(e.value.extra_info)
     assert "bash_stdout" in e.value.extra_info
     assert "bash_stderr" in e.value.extra_info
+
+
+async def test_echo_new_lines(runtime_with_default_session: RemoteRuntime):
+    r = await runtime_with_default_session.run_in_session(A(command="echo 'hello\nworld'", check=True))
+    assert r.output.splitlines() == ["hello", "world"]
+
+
+async def test_interrupt_session(runtime_with_default_session: RemoteRuntime):
+    try:
+        await runtime_with_default_session.run_in_session(A(command="sleep 10", timeout=0.1))
+    except Exception:
+        pass
+    r = await runtime_with_default_session.run_in_session(BashInterruptAction())
+    r = await runtime_with_default_session.run_in_session(A(command="echo 'asdf'", check=True))
+    assert r.output == "asdf"

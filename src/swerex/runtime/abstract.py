@@ -81,11 +81,26 @@ class BashAction(BaseModel):
     expect: list[str] = []
     """Outputs to expect in addition to the PS1"""
 
-    session_type: Literal["bash"] = "bash"
+    action_type: Literal["bash"] = "bash"
     """Used for type discrimination. Do not change."""
 
 
-Action = Annotated[BashAction, Field(discriminator="session_type")]
+class BashInterruptAction(BaseModel):
+    session: str = "default"
+
+    timeout: float = 0.2
+    """The timeout for the command. None means no timeout."""
+
+    n_retry: int = 3
+    """How many times to retry quitting."""
+
+    expect: list[str] = []
+    """Outputs to expect in addition to the PS1"""
+
+    action_type: Literal["bash_interrupt"] = "bash_interrupt"
+
+
+Action = Annotated[BashAction | BashInterruptAction, Field(discriminator="action_type")]
 """Union type for all actions. Do not use this directly."""
 
 

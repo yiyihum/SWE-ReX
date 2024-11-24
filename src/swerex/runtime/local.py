@@ -26,6 +26,7 @@ from swerex.runtime.abstract import (
     AbstractRuntime,
     Action,
     BashAction,
+    BashInterruptAction,
     BashObservation,
     CloseBashSessionResponse,
     CloseResponse,
@@ -165,7 +166,23 @@ class BashSession(Session):
         output = _strip_control_chars(self.shell.before)  # type: ignore
         return CreateBashSessionResponse(output=output)
 
-    async def run(self, action: BashAction) -> BashObservation:
+    async def interrupt(self, action: BashInterruptAction) -> BashObservation:
+        """Interrupt the session."""
+        for _ in range(action.n_retry):
+            self.shell.sendintr()
+            expect_strings = action.expect + [self._ps1]
+            try:
+                expect_index = self.shell.expect(expect_strings, timeout=action.timeout)  # type: ignore
+                matched_expect_string = expect_strings[expect_index]
+            except Exception:
+                time.sleep(0.2)
+                continue
+            output = _strip_control_chars(self.shell.before).strip()  # type: ignore
+            return BashObservation(output=output, exit_code=0, expect_string=matched_expect_string)
+        msg = f"Failed to interrupt session after {action.n_retry} retries"
+        raise pexpect.TIMEOUT(msg)
+
+    async def run(self, action: BashAction | BashInterruptAction) -> BashObservation:
         """Run a bash action.
 
         Raises:
@@ -180,6 +197,8 @@ class BashSession(Session):
         if self.shell is None:
             msg = "shell not initialized"
             raise SessionNotInitializedError(msg)
+        if isinstance(action, BashInterruptAction):
+            return await self.interrupt(action)
         if action.is_interactive_command or action.is_interactive_quit:
             return await self._run_interactive(action)
         r = await self._run_normal(action)

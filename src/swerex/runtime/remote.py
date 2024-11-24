@@ -85,12 +85,17 @@ class RemoteRuntime(AbstractRuntime):
         try:
             module, _, exc_name = exc_transfer.class_path.rpartition(".")
             if module not in sys.modules:
-                self.logger.warning("Module %s not in sys.modules, trying to import it", module)
-                __import__(module)
+                self.logger.debug("Module %s not in sys.modules, trying to import it", module)
+                try:
+                    __import__(module)
+                except ImportError:
+                    self.logger.debug("Failed to import module %s", module)
+                    exc = SweRexception(exc_transfer.message)
+                    raise exc from None
             exception = getattr(sys.modules[module], exc_name)(exc_transfer.message)
             exception.extra_info = exc_transfer.extra_info
         except AttributeError:
-            self.logger.error(f"Unknown exception class: {exc_transfer.class_path!r}")
+            self.logger.debug(f"Unknown exception class: {exc_transfer.class_path!r}")
             exc = SweRexception(exc_transfer.message)
             raise exc from None
         raise exception from None
@@ -136,6 +141,7 @@ class RemoteRuntime(AbstractRuntime):
 
     def _request(self, endpoint: str, request: BaseModel | None, output_class: Any):
         """Small helper to make requests to the server and handle errors and output."""
+        print("request", request.model_dump() if request else None, endpoint)
         response = requests.post(
             f"{self._api_url}/{endpoint}", json=request.model_dump() if request else None, headers=self._headers
         )
