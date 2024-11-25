@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import time
 from abc import ABC, abstractmethod
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -249,6 +250,8 @@ class BashSession(Session):
         2. Execute the command
         3. Get the exit code
         """
+        action = deepcopy(action)
+
         assert self.shell is not None
         _check_bash_command(action.command)
 
