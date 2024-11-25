@@ -144,6 +144,14 @@ class BashSession(Session):
             raise RuntimeError(msg)
         return self._shell
 
+    def _get_reset_commands(self) -> list[str]:
+        """Commands to reset the PS1, PS2, and PS0 variables to their default values."""
+        return [
+            f"export PS1='{self._ps1}'",
+            "export PS2=''",
+            "export PS0=''",
+        ]
+
     async def start(self) -> CreateBashSessionResponse:
         """Spawn the session, source any startupfiles and set the PS1."""
         self._shell = pexpect.spawn(
@@ -156,11 +164,7 @@ class BashSession(Session):
         cmds = []
         if self.request.startup_source:
             cmds += [f"source {path}" for path in self.request.startup_source] + ["sleep 0.3"]
-        cmds += [
-            f"export PS1='{self._ps1}'",
-            "export PS2=''",
-            "export PS0=''",
-        ]
+        cmds += self._get_reset_commands()
         cmd = " ; ".join(cmds)
         self.shell.sendline(cmd)
         self.shell.expect(self._ps1, timeout=self.request.startup_timeout)
