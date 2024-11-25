@@ -222,7 +222,7 @@ class BashSession(Session):
             expect_index = self.shell.expect(expect_strings, timeout=action.timeout)  # type: ignore
             matched_expect_string = expect_strings[expect_index]
         except pexpect.TIMEOUT as e:
-            msg = f"timeout while running command {action.command!r}"
+            msg = f"timeout after {action.timeout} seconds while running command {action.command!r}"
             raise CommandTimeoutError(msg) from e
         output: str = _strip_control_chars(self.shell.before).strip()  # type: ignore
         if action.is_interactive_quit:
@@ -277,7 +277,7 @@ class BashSession(Session):
             expect_index = self.shell.expect(expect_strings, timeout=action.timeout)  # type: ignore
             matched_expect_string = expect_strings[expect_index]
         except pexpect.TIMEOUT as e:
-            msg = f"timeout while running command {action.command!r}"
+            msg = f"timeout after {action.timeout} seconds while running command {action.command!r}"
             raise CommandTimeoutError(msg) from e
         output: str = _strip_control_chars(self.shell.before).strip()  # type: ignore
 
