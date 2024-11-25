@@ -141,7 +141,6 @@ class RemoteRuntime(AbstractRuntime):
 
     def _request(self, endpoint: str, request: BaseModel | None, output_class: Any):
         """Small helper to make requests to the server and handle errors and output."""
-        print("request", request.model_dump() if request else None, endpoint)
         response = requests.post(
             f"{self._api_url}/{endpoint}", json=request.model_dump() if request else None, headers=self._headers
         )

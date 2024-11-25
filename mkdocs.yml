@@ -34,6 +34,7 @@ theme:
     - content.footnote.tooltips
     - header.autohide
     - announce.dismiss
+    - content.code.annotate
 markdown_extensions:
   - sane_lists
   - admonition
