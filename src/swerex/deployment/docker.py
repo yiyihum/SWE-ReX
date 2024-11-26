@@ -12,7 +12,7 @@ from swerex import PACKAGE_NAME, REMOTE_EXECUTABLE_NAME
 from swerex.deployment.abstract import AbstractDeployment
 from swerex.deployment.config import DockerDeploymentConfig
 from swerex.deployment.hooks.abstract import CombinedDeploymentHook, DeploymentHook
-from swerex.exceptions import DeploymentNotStartedError
+from swerex.exceptions import DeploymentNotStartedError, DockerPullError
 from swerex.runtime.abstract import IsAliveResponse
 from swerex.runtime.config import RemoteRuntimeConfig
 from swerex.runtime.remote import RemoteRuntime
@@ -130,8 +130,11 @@ class DockerDeployment(AbstractDeployment):
             return
         self.logger.info(f"Pulling image {self._config.image!r}")
         self._hooks.on_custom_step("Pulling docker image")
-        pull_output = _pull_image(self._config.image)
-        self.logger.info(pull_output.decode())
+        try:
+            _pull_image(self._config.image)
+        except subprocess.CalledProcessError as e:
+            msg = f"Failed to pull image {self._config.image}"
+            raise DockerPullError(msg) from e
 
     async def start(self):
         """Starts the runtime."""

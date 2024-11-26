@@ -40,3 +40,9 @@ class SessionDoesNotExistError(SweRexception, ValueError): ...
 class DeploymentNotStartedError(SweRexception, RuntimeError):
     def __init__(self, message="Deployment not started"):
         super().__init__(message)
+
+
+class DeploymentStartupError(SweRexception, RuntimeError): ...
+
+
+class DockerPullError(DeploymentStartupError): ...
