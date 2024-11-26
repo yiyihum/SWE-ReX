@@ -186,8 +186,15 @@ class DockerDeployment(AbstractDeployment):
                 )
             except subprocess.CalledProcessError:
                 self.logger.warning(f"Failed to kill container {self._container_name}")
-            self._container_process.kill()
-            self._container_process.wait()
+            for _ in range(3):
+                self._container_process.kill()
+                try:
+                    self._container_process.wait(timeout=5)
+                    break
+                except subprocess.TimeoutExpired:
+                    continue
+            else:
+                self.logger.warning(f"Failed to kill container {self._container_name} with SIGKILL")
 
             self._container_process = None
             self._container_name = None
