@@ -94,8 +94,8 @@ class RemoteRuntime(AbstractRuntime):
                     raise exc from None
             exception = getattr(sys.modules[module], exc_name)(exc_transfer.message)
             exception.extra_info = exc_transfer.extra_info
-        except AttributeError:
-            self.logger.debug(f"Unknown exception class: {exc_transfer.class_path!r}")
+        except (AttributeError, TypeError):
+            self.logger.error(f"Could not initialize transferred exception: {exc_transfer.class_path!r}")
             exc = SweRexception(exc_transfer.message)
             raise exc from None
         raise exception from None
