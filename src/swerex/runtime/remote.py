@@ -81,7 +81,7 @@ class RemoteRuntime(AbstractRuntime):
     def _handle_transfer_exception(self, exc_transfer: _ExceptionTransfer) -> None:
         """Reraise exceptions that were thrown on the remote."""
         if exc_transfer.traceback:
-            print("Traceback: ", exc_transfer.traceback, file=sys.stderr)
+            self.logger.critical("Traceback: \n%s", exc_transfer.traceback)
         try:
             module, _, exc_name = exc_transfer.class_path.rpartition(".")
             if module not in sys.modules:
@@ -95,7 +95,10 @@ class RemoteRuntime(AbstractRuntime):
             exception = getattr(sys.modules[module], exc_name)(exc_transfer.message)
             exception.extra_info = exc_transfer.extra_info
         except (AttributeError, TypeError):
-            self.logger.error(f"Could not initialize transferred exception: {exc_transfer.class_path!r}")
+            self.logger.error(
+                f"Could not initialize transferred exception: {exc_transfer.class_path!r}. "
+                f"Transfer object: {exc_transfer}"
+            )
             exc = SweRexception(exc_transfer.message)
             raise exc from None
         raise exception from None
