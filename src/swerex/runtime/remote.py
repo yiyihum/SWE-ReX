@@ -84,15 +84,18 @@ class RemoteRuntime(AbstractRuntime):
             self.logger.critical("Traceback: \n%s", exc_transfer.traceback)
         try:
             module, _, exc_name = exc_transfer.class_path.rpartition(".")
-            if module not in sys.modules:
-                self.logger.debug("Module %s not in sys.modules, trying to import it", module)
-                try:
-                    __import__(module)
-                except ImportError:
-                    self.logger.debug("Failed to import module %s", module)
-                    exc = SweRexception(exc_transfer.message)
-                    raise exc from None
-            exception = getattr(sys.modules[module], exc_name)(exc_transfer.message)
+            if module == "builtins":
+                exception = getattr(globals(), exc_name)(exc_transfer.message)
+            else:
+                if module not in sys.modules:
+                    self.logger.debug("Module %s not in sys.modules, trying to import it", module)
+                    try:
+                        __import__(module)
+                    except ImportError:
+                        self.logger.debug("Failed to import module %s", module)
+                        exc = SweRexception(exc_transfer.message)
+                        raise exc from None
+                exception = getattr(sys.modules[module], exc_name)(exc_transfer.message)
             exception.extra_info = exc_transfer.extra_info
         except (AttributeError, TypeError):
             self.logger.error(
