@@ -82,28 +82,33 @@ class RemoteRuntime(AbstractRuntime):
         """Reraise exceptions that were thrown on the remote."""
         if exc_transfer.traceback:
             self.logger.critical("Traceback: \n%s", exc_transfer.traceback)
+        module, _, exc_name = exc_transfer.class_path.rpartition(".")
+        print(module, exc_name)
+        if module == "builtins":
+            module_obj = __builtins__
+        else:
+            if module not in sys.modules:
+                self.logger.debug("Module %s not in sys.modules, trying to import it", module)
+                try:
+                    __import__(module)
+                except ImportError:
+                    self.logger.debug("Failed to import module %s", module)
+                    exc = SweRexception(exc_transfer.message)
+                    raise exc from None
+            module_obj = sys.modules[module]
         try:
-            module, _, exc_name = exc_transfer.class_path.rpartition(".")
-            if module == "builtins":
-                exception = getattr(globals(), exc_name)(exc_transfer.message)
+            if isinstance(module_obj, dict):
+                # __builtins__, sometimes
+                exception = module_obj[exc_name](exc_transfer.message)
             else:
-                if module not in sys.modules:
-                    self.logger.debug("Module %s not in sys.modules, trying to import it", module)
-                    try:
-                        __import__(module)
-                    except ImportError:
-                        self.logger.debug("Failed to import module %s", module)
-                        exc = SweRexception(exc_transfer.message)
-                        raise exc from None
-                exception = getattr(sys.modules[module], exc_name)(exc_transfer.message)
-            exception.extra_info = exc_transfer.extra_info
+                exception = getattr(module_obj, exc_name)(exc_transfer.message)
         except (AttributeError, TypeError):
             self.logger.error(
                 f"Could not initialize transferred exception: {exc_transfer.class_path!r}. "
                 f"Transfer object: {exc_transfer}"
             )
-            exc = SweRexception(exc_transfer.message)
-            raise exc from None
+            exception = SweRexception(exc_transfer.message)
+        exception.extra_info = exc_transfer.extra_info
         raise exception from None
 
     def _handle_response_errors(self, response: requests.Response) -> None:
