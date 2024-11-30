@@ -202,8 +202,10 @@ class DockerDeployment(AbstractDeployment):
         if self._config.remove_images:
             if _is_image_available(self._config.image):
                 self.logger.info(f"Removing image {self._config.image}")
-                remove_output = _remove_image(self._config.image)
-                self.logger.debug(remove_output.decode())
+                try:
+                    _remove_image(self._config.image)
+                except subprocess.CalledProcessError:
+                    self.logger.error(f"Failed to remove image {self._config.image}", exc_info=True)
 
     @property
     def runtime(self) -> RemoteRuntime:
