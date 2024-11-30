@@ -171,6 +171,18 @@ class BashSession(Session):
         output = _strip_control_chars(self.shell.before)  # type: ignore
         return CreateBashSessionResponse(output=output)
 
+    def _eat_next_ctrl_c(self, timeout: float = 0.5) -> str:
+        """Eat the next "^C" if displayed in the output.
+
+        Returns any output that was displayed before the "^C".
+        """
+
+        try:
+            self.shell.expect("^C", timeout=timeout)
+        except pexpect.TIMEOUT:
+            return ""
+        return _strip_control_chars(self.shell.before)
+
     async def interrupt(self, action: BashInterruptAction) -> BashObservation:
         """Interrupt the session."""
         for _ in range(action.n_retry):
@@ -182,7 +194,9 @@ class BashSession(Session):
             except Exception:
                 time.sleep(0.2)
                 continue
-            output = _strip_control_chars(self.shell.before).strip()  # type: ignore
+            output = _strip_control_chars(self.shell.before)  # type: ignore
+            output += self._eat_next_ctrl_c()
+            output = output.strip()
             return BashObservation(output=output, exit_code=0, expect_string=matched_expect_string)
         msg = f"Failed to interrupt session after {action.n_retry} retries"
         raise pexpect.TIMEOUT(msg)
