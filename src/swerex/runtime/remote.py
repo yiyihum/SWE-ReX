@@ -116,7 +116,11 @@ class RemoteRuntime(AbstractRuntime):
         if response.status_code == 511:
             exc_transfer = _ExceptionTransfer(**response.json()["swerexception"])
             self._handle_transfer_exception(exc_transfer)
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except Exception:
+            self.logger.critical("Received error response: %s", response.json())
+            raise
 
     async def is_alive(self, *, timeout: float | None = None) -> IsAliveResponse:
         """Checks if the runtime is alive.
