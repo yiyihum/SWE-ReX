@@ -185,6 +185,7 @@ class BashSession(Session):
 
     async def interrupt(self, action: BashInterruptAction) -> BashObservation:
         """Interrupt the session."""
+        output = ""
         for _ in range(action.n_retry):
             self.shell.sendintr()
             expect_strings = action.expect + [self._ps1]
@@ -194,12 +195,23 @@ class BashSession(Session):
             except Exception:
                 time.sleep(0.2)
                 continue
-            output = _strip_control_chars(self.shell.before)  # type: ignore
+            output += _strip_control_chars(self.shell.before)  # type: ignore
             output += self._eat_next_ctrl_c()
             output = output.strip()
             return BashObservation(output=output, exit_code=0, expect_string=matched_expect_string)
-        msg = f"Failed to interrupt session after {action.n_retry} retries"
-        raise pexpect.TIMEOUT(msg)
+        # Fall back to putting job to background and killing it there:
+        try:
+            self.shell.sendcontrol("z")
+            self.shell.expect(expect_strings, timeout=action.timeout)
+            output += self.shell.before
+            self.shell.sendline("kill -9 %1")
+            expect_index = self.shell.expect(expect_strings, timeout=action.timeout)  # type: ignore
+            matched_expect_string = expect_strings[expect_index]
+            output += self.shell.before
+            return BashObservation(output=output, exit_code=0, expect_string=matched_expect_string)
+        except pexpect.TIMEOUT:
+            msg = "Failed to interrupt session"
+            raise pexpect.TIMEOUT(msg)
 
     async def run(self, action: BashAction | BashInterruptAction) -> BashObservation:
         """Run a bash action.

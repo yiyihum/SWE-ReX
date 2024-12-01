@@ -303,3 +303,12 @@ async def test_interrupt_session(runtime_with_default_session: RemoteRuntime):
     r = await runtime_with_default_session.run_in_session(BashInterruptAction())
     r = await runtime_with_default_session.run_in_session(A(command="echo 'asdf'", check="raise"))
     assert r.output == "asdf"
+
+
+async def test_interrupt_pager(runtime_with_default_session: RemoteRuntime):
+    with pytest.raises(CommandTimeoutError):
+        # -+F to force less to start
+        await runtime_with_default_session.run_in_session(A(command="echo 'blargh'|less -+F", timeout=0.1))
+    await runtime_with_default_session.run_in_session(BashInterruptAction())
+    r = await runtime_with_default_session.run_in_session(A(command="echo 'asdf'", check="raise"))
+    assert "asdf" in r.output
