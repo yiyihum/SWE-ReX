@@ -5,8 +5,9 @@
 set -euo pipefail
 
 sed -i '' 's/name = "swerex"/name = "0fdb5604"/g' pyproject.toml
-echo "" > README.md
+echo "Hi there, hello" > README.md
 
 rm -r dist/**
+pip install build
 python -m build
-twine upload dist/*
+pipx run twine upload dist/*
