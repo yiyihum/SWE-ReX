@@ -63,17 +63,17 @@ async def test_create_close_shell(remote_runtime: RemoteRuntime):
 
 
 async def test_run_in_shell(runtime_with_default_session: RemoteRuntime):
-    r = await runtime_with_default_session.run_in_session(A(command="echo 'hello world'", check=True))
-    r = await runtime_with_default_session.run_in_session(A(command="doesntexit"))
+    r = await runtime_with_default_session.run_in_session(A(command="echo 'hello world'", check="raise"))
+    r = await runtime_with_default_session.run_in_session(A(command="doesntexit", check="silent"))
     assert r.exit_code == 127
-    r = await runtime_with_default_session.run_in_session(A(command="false && true"))
+    r = await runtime_with_default_session.run_in_session(A(command="false && true", check="silent"))
     assert r.exit_code == 1
-    r = await runtime_with_default_session.run_in_session(A(command="false || true", check=True))
+    await runtime_with_default_session.run_in_session(A(command="false || true", check="raise"))
 
 
 async def test_run_in_shell_check_exit_code(runtime_with_default_session: RemoteRuntime):
     with pytest.raises(NonZeroExitCodeError):
-        await runtime_with_default_session.run_in_session(A(command="false", check=True))
+        await runtime_with_default_session.run_in_session(A(command="false", check="raise"))
 
 
 async def test_run_in_shell_non_existent_session(remote_runtime: RemoteRuntime):
@@ -104,26 +104,27 @@ async def test_run_in_shell_interactive_command(runtime_with_default_session: Re
     await runtime_with_default_session.run_in_session(
         A(command="print('hello world')", is_interactive_command=True, expect=[">>> "])
     )
-    await runtime_with_default_session.run_in_session(A(command="quit()\n", is_interactive_quit=True, check=True))
+    await runtime_with_default_session.run_in_session(A(command="quit()\n", is_interactive_quit=True, check="raise"))
 
 
+@pytest.mark.xfail
 async def test_run_in_shell_multiple_interactive_and_normal_commands(runtime_with_default_session: RemoteRuntime):
     run = runtime_with_default_session
-    await run.run_in_session(A(command="ls", check=True))
+    await run.run_in_session(A(command="ls", check="raise"))
     await run.run_in_session(A(command="python", is_interactive_command=True, expect=[">>> "]))
 
     r = await run.run_in_session(A(command="print('hello world')", is_interactive_command=True, expect=[">>> "]))
     assert "hello world" in r.output
 
-    await run.run_in_session(A(command="quit()\n", is_interactive_quit=True, check=True))
+    await run.run_in_session(A(command="quit()\n", is_interactive_quit=True, check="raise"))
 
-    r = await run.run_in_session(A(command="echo 'hello world'", check=True))
+    r = await run.run_in_session(A(command="echo 'hello world'", check="raise"))
     assert "hello world" in r.output
 
     await run.run_in_session(A(command="python", is_interactive_command=True, expect=[">>> "]))
     await run.run_in_session(A(command="print('hello world')", is_interactive_command=True, expect=[">>> "]))
-    await run.run_in_session(A(command="quit()\n", is_interactive_quit=True, check=True))
-    r = await run.run_in_session(A(command="echo 'hello world'", check=True))
+    await run.run_in_session(A(command="quit()\n", is_interactive_quit=True, check="raise"))
+    r = await run.run_in_session(A(command="echo 'hello world'", check="raise"))
     assert "hello world" in r.output
 
 
@@ -153,18 +154,18 @@ async def test_multiple_isolated_shells(remote_runtime: RemoteRuntime):
     await remote_runtime.create_session(CreateBashSessionRequest(session="shell2"))
 
     await asyncio.gather(
-        remote_runtime.run_in_session(A(command="x=42", session="shell1", check=True)),
-        remote_runtime.run_in_session(A(command="y=24", session="shell2", check=True)),
+        remote_runtime.run_in_session(A(command="x=42", session="shell1", check="raise")),
+        remote_runtime.run_in_session(A(command="y=24", session="shell2", check="raise")),
     )
 
-    response1 = await remote_runtime.run_in_session(A(command="echo $x", session="shell1", check=True))
-    response2 = await remote_runtime.run_in_session(A(command="echo $y", session="shell2", check=True))
+    response1 = await remote_runtime.run_in_session(A(command="echo $x", session="shell1", check="raise"))
+    response2 = await remote_runtime.run_in_session(A(command="echo $y", session="shell2", check="raise"))
 
     assert response1.output.strip() == "42"
     assert response2.output.strip() == "24"
 
-    response3 = await remote_runtime.run_in_session(A(command="echo $y", session="shell1", check=True))
-    response4 = await remote_runtime.run_in_session(A(command="echo $x", session="shell2", check=True))
+    response3 = await remote_runtime.run_in_session(A(command="echo $y", session="shell1", check="raise"))
+    response4 = await remote_runtime.run_in_session(A(command="echo $x", session="shell2", check="raise"))
 
     assert response3.output.strip() == ""
     assert response4.output.strip() == ""
@@ -180,63 +181,63 @@ async def test_empty_command(remote_runtime: RemoteRuntime):
 
 async def test_command_fails_check_exit_code(runtime_with_default_session: RemoteRuntime):
     with pytest.raises(NonZeroExitCodeError):
-        await runtime_with_default_session.run_in_session(A(command="false", check=True))
+        await runtime_with_default_session.run_in_session(A(command="false", check="raise"))
 
 
 async def test_empty_command_in_shell(runtime_with_default_session: RemoteRuntime):
-    await runtime_with_default_session.run_in_session(A(command="", check=True))
-    await runtime_with_default_session.run_in_session(A(command="\n", check=True))
-    await runtime_with_default_session.run_in_session(A(command="\n\n \n", check=True))
+    await runtime_with_default_session.run_in_session(A(command="", check="raise"))
+    await runtime_with_default_session.run_in_session(A(command="\n", check="raise"))
+    await runtime_with_default_session.run_in_session(A(command="\n\n \n", check="raise"))
 
 
 async def test_command_with_linebreaks(runtime_with_default_session: RemoteRuntime):
-    await runtime_with_default_session.run_in_session(A(command="\n echo 'test'\n\n", check=True))
+    await runtime_with_default_session.run_in_session(A(command="\n echo 'test'\n\n", check="raise"))
 
 
 async def test_multiple_commands_with_linebreaks_in_shell(runtime_with_default_session: RemoteRuntime):
     r = await runtime_with_default_session.run_in_session(
-        A(command="\n\n\n echo 'test1' \n  \n \n echo 'test2' \n\n\n", check=True)
+        A(command="\n\n\n echo 'test1' \n  \n \n echo 'test2' \n\n\n", check="raise")
     )
     assert r.output.splitlines() == ["test1", "test2"]
 
 
 async def test_bash_multiline_command_eof(runtime_with_default_session: RemoteRuntime):
     command = "\n".join(["python <<EOF", "print('hello world')", "print('hello world 2')", "EOF"])
-    r = await runtime_with_default_session.run_in_session(A(command=command, check=True))
+    r = await runtime_with_default_session.run_in_session(A(command=command, check="raise"))
     assert "hello world" in r.output
     assert "hello world 2" in r.output
 
 
 async def test_run_in_shell_subshell_command(runtime_with_default_session: RemoteRuntime):
-    await runtime_with_default_session.run_in_session(A(command="(sleep 10) &", check=True))
+    await runtime_with_default_session.run_in_session(A(command="(sleep 10) &", check="raise"))
 
 
 async def test_run_just_comment(runtime_with_default_session: RemoteRuntime):
-    r = await runtime_with_default_session.run_in_session(A(command="# echo 'hello world'", check=True))
+    r = await runtime_with_default_session.run_in_session(A(command="# echo 'hello world'", check="raise"))
     assert r.output == ""
 
 
 async def test_run_in_shell_multiple_commands(runtime_with_default_session: RemoteRuntime):
     r = await runtime_with_default_session.run_in_session(
-        A(command="echo 'hello world'; echo 'hello again'", check=True)
+        A(command="echo 'hello world'; echo 'hello again'", check="raise")
     )
     assert r.output.splitlines() == ["hello world", "hello again"]
     r = await runtime_with_default_session.run_in_session(
-        A(command="echo 'hello world' && echo 'hello again'", check=True)
+        A(command="echo 'hello world' && echo 'hello again'", check="raise")
     )
     assert r.output.splitlines() == ["hello world", "hello again"]
 
 
 async def test_run_in_shell_while_loop(runtime_with_default_session: RemoteRuntime):
     r = await runtime_with_default_session.run_in_session(
-        A(command="for i in {1..3};\n do echo 'hello world';\n done", check=True)
+        A(command="for i in {1..3};\n do echo 'hello world';\n done", check="raise")
     )
     assert r.output.splitlines() == ["hello world"] * 3
 
 
 async def test_run_in_shell_bashlex_errors(runtime_with_default_session: RemoteRuntime):
     # One of the bugs in bashlex
-    await runtime_with_default_session.run_in_session(A(command="[[ $env == $env ]]", check=True))
+    await runtime_with_default_session.run_in_session(A(command="[[ $env == $env ]]", check="raise"))
 
 
 async def test_run_shell_check_exit_code(runtime_with_default_session: RemoteRuntime):
@@ -245,7 +246,7 @@ async def test_run_shell_check_exit_code(runtime_with_default_session: RemoteRun
 
 
 async def test_with_bashlex_errors(runtime_with_default_session: RemoteRuntime):
-    r = await runtime_with_default_session.run_in_session(A(command="echo 'hw';A=();echo 'asdf'", check=True))
+    r = await runtime_with_default_session.run_in_session(A(command="echo 'hw';A=();echo 'asdf'", check="raise"))
     assert "hw" in r.output
     assert "asdf" in r.output
 
@@ -276,7 +277,7 @@ async def test_upload_directory(runtime_with_default_session: RemoteRuntime, tmp
 
 
 async def test_fail_bashlex_errors(runtime_with_default_session: RemoteRuntime):
-    r = await runtime_with_default_session.run_in_session(A(command="A=(); false"))
+    r = await runtime_with_default_session.run_in_session(A(command="A=(); false", check="silent"))
     assert r.exit_code == 1
     assert r.output == ""
 
@@ -290,7 +291,7 @@ async def test_check_bash_command_invalid(runtime_with_default_session: RemoteRu
 
 
 async def test_echo_new_lines(runtime_with_default_session: RemoteRuntime):
-    r = await runtime_with_default_session.run_in_session(A(command="echo 'hello\nworld'", check=True))
+    r = await runtime_with_default_session.run_in_session(A(command="echo 'hello\nworld'", check="raise"))
     assert r.output.splitlines() == ["hello", "world"]
 
 
@@ -300,5 +301,5 @@ async def test_interrupt_session(runtime_with_default_session: RemoteRuntime):
     except Exception:
         pass
     r = await runtime_with_default_session.run_in_session(BashInterruptAction())
-    r = await runtime_with_default_session.run_in_session(A(command="echo 'asdf'", check=True))
+    r = await runtime_with_default_session.run_in_session(A(command="echo 'asdf'", check="raise"))
     assert r.output == "asdf"

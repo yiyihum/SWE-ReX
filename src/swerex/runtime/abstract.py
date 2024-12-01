@@ -68,9 +68,12 @@ class BashAction(BaseModel):
     interactive program, set this to False.
     """
 
-    check: bool = False
-    """Whether to check for the exit code. If True, we will raise a
-    `NonZeroExitCodeError` if the command has a non-zero exit code.
+    check: Literal["silent", "raise", "ignore"] = "raise"
+    """Whether to check for the exit code.
+    If "silent", we will extract the exit code, but not raise any errors.
+    If "raise", we will raise a `NonZeroExitCodeError` if the command has a non-zero exit code.
+    If "ignore", we will not attempt to extract the exit code, but always leave
+    it as None.
     """
 
     error_msg: str = ""

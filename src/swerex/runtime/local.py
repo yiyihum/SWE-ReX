@@ -221,7 +221,7 @@ class BashSession(Session):
         if action.is_interactive_command or action.is_interactive_quit:
             return await self._run_interactive(action)
         r = await self._run_normal(action)
-        if action.check and r.exit_code != 0:
+        if action.check == "raise" and r.exit_code != 0:
             msg = (
                 f"Command {action.command!r} failed with exit code {r.exit_code}. " f"Here is the output:\n{r.output!r}"
             )
@@ -303,6 +303,8 @@ class BashSession(Session):
         output: str = _strip_control_chars(self.shell.before).strip()  # type: ignore
 
         # Part 3: Get the exit code
+        if action.check == "ignore":
+            return BashObservation(output=output, exit_code=None, expect_string=matched_expect_string)
 
         _exit_code_prefix = "EXITCODESTART"
         _exit_code_suffix = "EXITCODEEND"
