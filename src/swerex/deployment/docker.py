@@ -38,7 +38,7 @@ def _pull_image(image: str) -> bytes:
 
 
 def _remove_image(image: str) -> bytes:
-    return subprocess.check_output(["docker", "rmi", image])
+    return subprocess.check_output(["docker", "rmi", image], timeout=30)
 
 
 class DockerDeployment(AbstractDeployment):
@@ -182,7 +182,10 @@ class DockerDeployment(AbstractDeployment):
         if self._container_process is not None:
             try:
                 subprocess.check_call(
-                    ["docker", "kill", self._container_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                    ["docker", "kill", self._container_name],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=10,
                 )
             except subprocess.CalledProcessError:
                 self.logger.warning(f"Failed to kill container {self._container_name}")
