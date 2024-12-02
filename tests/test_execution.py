@@ -312,3 +312,4 @@ async def test_interrupt_pager(runtime_with_default_session: RemoteRuntime):
     await runtime_with_default_session.run_in_session(BashInterruptAction())
     r = await runtime_with_default_session.run_in_session(A(command="echo 'asdf'", check="raise"))
     assert "asdf" in r.output
+    assert "kill" in r.output.lower()

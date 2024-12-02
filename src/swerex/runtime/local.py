@@ -171,17 +171,14 @@ class BashSession(Session):
         output = _strip_control_chars(self.shell.before)  # type: ignore
         return CreateBashSessionResponse(output=output)
 
-    def _eat_next_ctrl_c(self, timeout: float = 0.5) -> str:
-        """Eat the next "^C" if displayed in the output.
-
-        Returns any output that was displayed before the "^C".
-        """
-
+    def _eat_following_output(self, timeout: float = 0.5) -> str:
+        """Return all output that happens in the next `timeout` seconds."""
+        time.sleep(timeout)
         try:
-            self.shell.expect("^C", timeout=timeout)
+            output = self.shell.read_nonblocking(timeout=0.1)
         except pexpect.TIMEOUT:
             return ""
-        return _strip_control_chars(self.shell.before)
+        return _strip_control_chars(output)
 
     async def interrupt(self, action: BashInterruptAction) -> BashObservation:
         """Interrupt the session."""
@@ -196,7 +193,7 @@ class BashSession(Session):
                 time.sleep(0.2)
                 continue
             output += _strip_control_chars(self.shell.before)  # type: ignore
-            output += self._eat_next_ctrl_c()
+            output += self._eat_following_output()
             output = output.strip()
             return BashObservation(output=output, exit_code=0, expect_string=matched_expect_string)
         # Fall back to putting job to background and killing it there:
@@ -208,6 +205,8 @@ class BashSession(Session):
             expect_index = self.shell.expect(expect_strings, timeout=action.timeout)  # type: ignore
             matched_expect_string = expect_strings[expect_index]
             output += self.shell.before
+            output += self._eat_following_output()
+            output = output.strip()
             return BashObservation(output=output, exit_code=0, expect_string=matched_expect_string)
         except pexpect.TIMEOUT:
             msg = "Failed to interrupt session"
