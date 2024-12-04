@@ -1,4 +1,4 @@
-__version__ = "1.0.15"
+__version__ = "1.0.16"
 
 
 REMOTE_EXECUTABLE_NAME = "swerex-remote"

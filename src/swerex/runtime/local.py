@@ -317,28 +317,34 @@ class BashSession(Session):
         if action.check == "ignore":
             return BashObservation(output=output, exit_code=None, expect_string=matched_expect_string)
 
-        _exit_code_prefix = "EXITCODESTART"
-        _exit_code_suffix = "EXITCODEEND"
-        self.shell.sendline(f"\necho {_exit_code_prefix}$?{_exit_code_suffix}")
         try:
-            self.shell.expect(_exit_code_suffix, timeout=1)
-        except pexpect.TIMEOUT:
-            msg = "timeout while getting exit code"
-            raise NoExitCodeError(msg)
-        exit_code_raw: str = _strip_control_chars(self.shell.before).strip()  # type: ignore
-        exit_code = re.findall(f"{_exit_code_prefix}([0-9]+)", exit_code_raw)
-        if len(exit_code) != 1:
-            msg = f"failed to parse exit code from output {exit_code_raw!r} (command: {action.command!r}, matches: {exit_code})"
-            raise NoExitCodeError(msg)
-        output += exit_code_raw.split(_exit_code_prefix)[0]
-        exit_code = int(exit_code[0])
-        # We get at least one more PS1 here.
-        try:
-            self.shell.expect(self._ps1, timeout=0.1)
-        except pexpect.TIMEOUT:
-            msg = "Timeout while getting PS1 after exit code extraction"
-            raise CommandTimeoutError(msg)
-        output = output.replace(self._UNIQUE_STRING, "").replace(self._ps1, "")
+            _exit_code_prefix = "EXITCODESTART"
+            _exit_code_suffix = "EXITCODEEND"
+            self.shell.sendline(f"\necho {_exit_code_prefix}$?{_exit_code_suffix}")
+            try:
+                self.shell.expect(_exit_code_suffix, timeout=1)
+            except pexpect.TIMEOUT:
+                msg = "timeout while getting exit code"
+                raise NoExitCodeError(msg)
+            exit_code_raw: str = _strip_control_chars(self.shell.before).strip()  # type: ignore
+            exit_code = re.findall(f"{_exit_code_prefix}([0-9]+)", exit_code_raw)
+            if len(exit_code) != 1:
+                msg = f"failed to parse exit code from output {exit_code_raw!r} (command: {action.command!r}, matches: {exit_code})"
+                raise NoExitCodeError(msg)
+            output += exit_code_raw.split(_exit_code_prefix)[0]
+            exit_code = int(exit_code[0])
+            # We get at least one more PS1 here.
+            try:
+                self.shell.expect(self._ps1, timeout=0.1)
+            except pexpect.TIMEOUT:
+                msg = "Timeout while getting PS1 after exit code extraction"
+                raise CommandTimeoutError(msg)
+            output = output.replace(self._UNIQUE_STRING, "").replace(self._ps1, "")
+        except Exception:
+            # Ignore all exceptions if check == 'silent'
+            if action.check == "raise":
+                raise
+            exit_code = None
         return BashObservation(output=output, exit_code=exit_code, expect_string=matched_expect_string)
 
     async def close(self) -> CloseSessionResponse:
