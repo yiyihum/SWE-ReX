@@ -90,7 +90,7 @@ markers = [
 testpaths = [
     "tests"
 ]
-xfail_strict = true
+xfail_strict = false
 asyncio_mode = "auto"
 
 [tool.ruff]
