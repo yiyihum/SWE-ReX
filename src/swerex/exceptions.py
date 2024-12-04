@@ -46,3 +46,7 @@ class DeploymentStartupError(SweRexception, RuntimeError): ...
 
 
 class DockerPullError(DeploymentStartupError): ...
+
+
+class DummyOutputsExhaustedError(SweRexception, RuntimeError):
+    """Raised if we try to pop from the dummy runtime's run_in_session_outputs list, but it's empty."""

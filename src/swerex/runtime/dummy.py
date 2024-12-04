@@ -3,6 +3,7 @@ from typing import Any
 
 from typing_extensions import Self
 
+from swerex.exceptions import DummyOutputsExhaustedError
 from swerex.runtime.abstract import (
     AbstractRuntime,
     Action,
@@ -64,7 +65,11 @@ class DummyRuntime(AbstractRuntime):
 
     async def run_in_session(self, action: Action) -> Observation:
         if isinstance(self.run_in_session_outputs, list):
-            return self.run_in_session_outputs.pop(0)
+            try:
+                return self.run_in_session_outputs.pop(0)
+            except IndexError:
+                msg = f"Dummy runtime's run_in_session_outputs list is empty: No output for {action.command!r}"
+                raise DummyOutputsExhaustedError(msg) from None
         return self.run_in_session_outputs
 
     async def close_session(self, request: CloseSessionRequest) -> CloseSessionResponse:
