@@ -3,7 +3,6 @@ import shlex
 import subprocess
 import time
 import uuid
-from threading import Lock
 from typing import Any
 
 from typing_extensions import Self
@@ -21,8 +20,6 @@ from swerex.utils.log import get_logger
 from swerex.utils.wait import _wait_until_alive
 
 __all__ = ["DockerDeployment", "DockerDeploymentConfig"]
-
-_FREE_PORT_LOCK = Lock()
 
 
 def _is_image_available(image: str) -> bool:
@@ -139,31 +136,30 @@ class DockerDeployment(AbstractDeployment):
     async def start(self):
         """Starts the runtime."""
         self._pull_image()
-        with _FREE_PORT_LOCK:
-            if self._config.port is None:
-                self._config.port = find_free_port()
-            assert self._container_name is None
-            self._container_name = self._get_container_name()
-            token = self._get_token()
-            cmds = [
-                "docker",
-                "run",
-                "--rm",
-                "-p",
-                f"{self._config.port}:8000",
-                *self._config.docker_args,
-                "--name",
-                self._container_name,
-                self._config.image,
-                *self._get_swerex_start_cmd(token),
-            ]
-            cmd_str = shlex.join(cmds)
-            self.logger.info(
-                f"Starting container {self._container_name} with image {self._config.image} serving on port {self._config.port}"
-            )
-            self.logger.debug(f"Command: {cmd_str!r}")
-            # shell=True required for && etc.
-            self._container_process = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if self._config.port is None:
+            self._config.port = find_free_port()
+        assert self._container_name is None
+        self._container_name = self._get_container_name()
+        token = self._get_token()
+        cmds = [
+            "docker",
+            "run",
+            "--rm",
+            "-p",
+            f"{self._config.port}:8000",
+            *self._config.docker_args,
+            "--name",
+            self._container_name,
+            self._config.image,
+            *self._get_swerex_start_cmd(token),
+        ]
+        cmd_str = shlex.join(cmds)
+        self.logger.info(
+            f"Starting container {self._container_name} with image {self._config.image} serving on port {self._config.port}"
+        )
+        self.logger.debug(f"Command: {cmd_str!r}")
+        # shell=True required for && etc.
+        self._container_process = subprocess.Popen(cmds, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self._hooks.on_custom_step("Starting runtime")
         self.logger.info(f"Starting runtime at {self._config.port}")
         self._runtime = RemoteRuntime.from_config(

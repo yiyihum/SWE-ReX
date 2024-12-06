@@ -229,42 +229,44 @@ class AbstractRuntime(ABC):
 
     @abstractmethod
     async def is_alive(self, *, timeout: float | None = None) -> IsAliveResponse:
-        """Checks if the runtime is alive."""
+        """Checks if the runtime is alive and running."""
         pass
 
     @abstractmethod
     async def create_session(self, request: CreateSessionRequest) -> CreateSessionResponse:
-        """Creates a new session."""
+        """Creates a new session (e.g., a bash shell)."""
         pass
 
     @abstractmethod
     async def run_in_session(self, action: Action) -> Observation:
-        """Runs a command in a session."""
+        """Runs a command in a session (e.g., a bash shell).
+        The name of the session is determined by the `session` field in the `Action`.
+        """
         pass
 
     @abstractmethod
     async def close_session(self, request: CloseSessionRequest) -> CloseSessionResponse:
-        """Closes a shell session."""
+        """Closes a shell session (e.g., a bash shell that we started earlier)."""
         pass
 
     @abstractmethod
     async def execute(self, command: Command) -> CommandResponse:
-        """Executes a command (independent of any shell session)."""
+        """Executes a command (in a sub-shell, similar to `subprocess.run()`)."""
         pass
 
     @abstractmethod
     async def read_file(self, request: ReadFileRequest) -> ReadFileResponse:
-        """Reads a file"""
+        """Reads a file and returns the content as a string."""
         pass
 
     @abstractmethod
     async def write_file(self, request: WriteFileRequest) -> WriteFileResponse:
-        """Writes a file"""
+        """Writes a string to a file."""
         pass
 
     @abstractmethod
     async def upload(self, request: UploadRequest) -> UploadResponse:
-        """Uploads a file"""
+        """Uploads a file from the local machine to the remote machine."""
         pass
 
     @abstractmethod
