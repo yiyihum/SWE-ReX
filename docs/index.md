@@ -25,7 +25,7 @@ Using SWE-ReX, we
 * 🦖 **Disentangle agent logic from infrastructure concerns**, making SWE-agent more stable and easier to maintain.
 
 <figure markdown="span">
-![SWE-ReX in action](assets/swerex30.png){: style="max-width: 500px; border-radius: 10px;"}
+![SWE-ReX in action](assets/swerex.gif){: style="max-width: 500px; border-radius: 10px;"}
 <figcaption>SWE-Agent running with SWE-ReX on 30 SWE-bench instances</figcaption>
 </figure>
 
