@@ -20,11 +20,11 @@ Running 100 agents in parallel? No problem either!
 ```bash
 pip install swe-rex
 # With modal support
-pip install swe-rex[modal]
+pip install 'swe-rex[modal]'
 # With fargate support
-pip install swe-rex[fargate]
+pip install 'swe-rex[fargate]'
 # Development setup (all optional dependencies)
-pip install swe-rex[dev]
+pip install 'swe-rex[dev]'
 ```
 
 Then head over to [our documentation](https://swe-rex.com/) to learn more!
