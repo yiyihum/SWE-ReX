@@ -74,6 +74,9 @@ plugins:
    - glightbox
    - search
    - include-markdown
+   - mike:
+      canonical_version: latest
+      version_selector: true
    - mkdocstrings:
       default_handler: python
       handlers:
@@ -100,3 +103,6 @@ repo_name: SWE-agent/SWE-ReX
 edit_uri: edit/main/docs/
 extra_css:
   - css/mkdocstrings.css
+extra:
+  version:
+    provider: mike

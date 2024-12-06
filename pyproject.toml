@@ -40,6 +40,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "mike",
     "mkdocs-material",
     "mkdocs-glightbox",
     "mkdocs-include-markdown-plugin",
