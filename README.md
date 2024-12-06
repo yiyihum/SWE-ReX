@@ -27,6 +27,8 @@ pip install swe-rex[fargate]
 pip install swe-rex[dev]
 ```
 
+Then head over to [our documentation](https://swe-rex.com/) to learn more!
+
 ## Why SWE-ReX?
 
 We built SWE-ReX to help you focus on developing and evaluating your agent, not on infrastructure.
