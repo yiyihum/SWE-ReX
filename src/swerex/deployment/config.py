@@ -6,7 +6,50 @@ from pydantic import BaseModel, ConfigDict
 from swerex.deployment.abstract import AbstractDeployment
 
 
+class LocalDeploymentConfig(BaseModel):
+    """Configuration for running locally."""
+
+    type: Literal["local"] = "local"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.local import LocalDeployment
+
+        return LocalDeployment.from_config(self)
+
+
+class DockerDeploymentConfig(BaseModel):
+    """Configuration for running locally in a Docker container."""
+
+    image: str = "python:3.11"
+    """The name of the docker image to use."""
+    port: int | None = None
+    """The port that the docker container connects to. If None, a free port is found."""
+    docker_args: list[str] = []
+    """Additional arguments to pass to the docker run command."""
+    startup_timeout: float = 180.0
+    """The time to wait for the runtime to start."""
+    pull: Literal["never", "always", "missing"] = "missing"
+    """When to pull docker images."""
+    remove_images: bool = False
+    """Whether to remove the image after it has stopped."""
+
+    type: Literal["docker"] = "docker"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.docker import DockerDeployment
+
+        return DockerDeployment.from_config(self)
+
+
 class ModalDeploymentConfig(BaseModel):
+    """Configuration for running on Modal."""
+
     image: str | PurePath = "python:3.11"
     """Image to use for the deployment."""
 
@@ -44,44 +87,9 @@ class ModalDeploymentConfig(BaseModel):
         return ModalDeployment.from_config(self)
 
 
-class DockerDeploymentConfig(BaseModel):
-    image: str = "python:3.11"
-    """The name of the docker image to use."""
-    port: int | None = None
-    """The port that the docker container connects to. If None, a free port is found."""
-    docker_args: list[str] = []
-    """Additional arguments to pass to the docker run command."""
-    startup_timeout: float = 180.0
-    """The time to wait for the runtime to start."""
-    pull: Literal["never", "always", "missing"] = "missing"
-    """When to pull docker images."""
-    remove_images: bool = False
-    """Whether to remove the image after it has stopped."""
-
-    type: Literal["docker"] = "docker"
-    """Discriminator for (de)serialization/CLI. Do not change."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    def get_deployment(self) -> AbstractDeployment:
-        from swerex.deployment.docker import DockerDeployment
-
-        return DockerDeployment.from_config(self)
-
-
-class DummyDeploymentConfig(BaseModel):
-    type: Literal["dummy"] = "dummy"
-    """Discriminator for (de)serialization/CLI. Do not change."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    def get_deployment(self) -> AbstractDeployment:
-        from swerex.deployment.dummy import DummyDeployment
-
-        return DummyDeployment.from_config(self)
-
-
 class FargateDeploymentConfig(BaseModel):
+    """Configuration for running on AWS Fargate."""
+
     image: str = "python:3.11"
     port: int = 8880
     cluster_name: str = "swe-rex-cluster"
@@ -104,21 +112,11 @@ class FargateDeploymentConfig(BaseModel):
         return FargateDeployment.from_config(self)
 
 
-class LocalDeploymentConfig(BaseModel):
-    """The port that the runtime connects to."""
-
-    type: Literal["local"] = "local"
-    """Discriminator for (de)serialization/CLI. Do not change."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    def get_deployment(self) -> AbstractDeployment:
-        from swerex.deployment.local import LocalDeployment
-
-        return LocalDeployment.from_config(self)
-
-
 class RemoteDeploymentConfig(BaseModel):
+    """Configuration for `RemoteDeployment`, a wrapper around `RemoteRuntime` that can be used to connect to any
+    swerex server.
+    """
+
     auth_token: str
     """The token to use for authentication."""
     host: str = "http://127.0.0.1"
@@ -136,6 +134,20 @@ class RemoteDeploymentConfig(BaseModel):
         from swerex.deployment.remote import RemoteDeployment
 
         return RemoteDeployment.from_config(self)
+
+
+class DummyDeploymentConfig(BaseModel):
+    """Configuration for `DummyDeployment`, a deployment that is used for testing."""
+
+    type: Literal["dummy"] = "dummy"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.dummy import DummyDeployment
+
+        return DummyDeployment.from_config(self)
 
 
 DeploymentConfig = (
