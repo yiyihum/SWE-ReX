@@ -31,13 +31,11 @@ pip install swe-rex[dev]
 
 We built SWE-ReX to help you focus on developing and evaluating your agent, not on infrastructure.
 
-SWE-ReX came out of our experiences with [SWE-agent][], which executed agent commands in a bash session running in a Docker container. 
-However, this
+SWE-ReX came out of our experiences with [SWE-agent][].
+With SWE-ReX, we
 
-* Introduced a lot of complexity to the codebase, because interacting with running bash sessions is hard, especially when adding interactive commands to the agent.
-* Made it hard to run commands on machines without Docker or to support non-Linux machines.
-* Made it hard to run multiple agents in parallel (which made evaluating on large benchmarks a pain).
-
-By separate out our most annoying infrastructure parts to SWE-ReX, we made SWE-agent faster, more stable, and easier to maintain.
+* Support fast, massively parallel agent runs (which made evaluating on large benchmarks a breeze).
+* Support running commands on machines without Docker or to support non-Linux machines.
+* Disentangle agent logic from infrastructure concerns, making SWE-agent more stable and easier to maintain.
 
 [SWE-agent]: https://swe-agent.com
