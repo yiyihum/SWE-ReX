@@ -59,7 +59,8 @@ nav:
     - Tutorial: usage.md
     - Architecture: architecture.md
   - Reference:
-    - Deployments:
+    - Deployment configuration: api/deployments/config.md
+    - Deployments classes:
       - Abstract: api/deployments/abstract.md
       - Local: api/deployments/local.md
       - Remote: api/deployments/remote.md
@@ -67,7 +68,7 @@ nav:
       - Modal: api/deployments/modal.md
       - Fargate: api/deployments/fargate.md
       - Dummy: api/deployments/dummy.md
-    - Runtimes:
+    - Runtimes classes:
       - Abstract: api/runtimes/abstract.md
       - Local: api/runtimes/local.md
       - Remote: api/runtimes/remote.md

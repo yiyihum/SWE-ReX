@@ -158,6 +158,7 @@ DeploymentConfig = (
     | RemoteDeploymentConfig
     | DummyDeploymentConfig
 )
+"""Union of all deployment configurations. Useful for type hints."""
 
 
 def get_deployment(
