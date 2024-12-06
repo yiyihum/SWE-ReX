@@ -50,8 +50,8 @@ dev = [
     "pre-commit",
     "pytest-asyncio",
     "griffe-pydantic",
-    "swerex[modal]",
-    "swerex[fargate]",
+    "swe-rex[modal]",
+    "swe-rex[fargate]",
 ]
 modal = [
     "modal",
