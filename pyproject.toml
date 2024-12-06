@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"  # If not defined, then legacy behavior 
 
 
 [project]
-name = "swerex"
+name = "swe-rex"
 dynamic = ["version",]
 description = ""
 readme = "README.md"
