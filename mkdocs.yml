@@ -26,7 +26,8 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
   features:
-    # - navigation.tabs
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.indexes
     - content.action.edit
     - navigation.footer
@@ -50,9 +51,12 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 nav:
-  - index.md
-  - Architecture: architecture.md
-  # - Usage: quickstart.md
+  - Getting started:
+    - index.md
+    - Overview: index.md
+    - Installation: installation.md
+    - Tutorial: usage.md
+    - Architecture: architecture.md
   - Reference:
     - Deployments:
       - Abstract: api/deployments/abstract.md
