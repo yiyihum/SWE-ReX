@@ -10,7 +10,7 @@ import requests
 from pydantic import BaseModel
 from typing_extensions import Self
 
-from swerex.exceptions import SweRexception
+from swerex.exceptions import SwerexException
 from swerex.runtime.abstract import (
     AbstractRuntime,
     Action,
@@ -93,7 +93,7 @@ class RemoteRuntime(AbstractRuntime):
                     __import__(module)
                 except ImportError:
                     self.logger.debug("Failed to import module %s", module)
-                    exc = SweRexception(exc_transfer.message)
+                    exc = SwerexException(exc_transfer.message)
                     raise exc from None
             module_obj = sys.modules[module]
         try:
@@ -107,7 +107,7 @@ class RemoteRuntime(AbstractRuntime):
                 f"Could not initialize transferred exception: {exc_transfer.class_path!r}. "
                 f"Transfer object: {exc_transfer}"
             )
-            exception = SweRexception(exc_transfer.message)
+            exception = SwerexException(exc_transfer.message)
         exception.extra_info = exc_transfer.extra_info
         raise exception from None
 
