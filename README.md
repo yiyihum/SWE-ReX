@@ -31,11 +31,11 @@ Using SWE-ReX, we
 
 This is [SWE-agent][] using SWE-ReX to run on 30 [SWE-bench][] instances in parallel:
 
-<center>
-<img src="docs/assets/swerex.gif" alt="SWE-ReX in action" style="max-width: 500px; border-radius: 10px;">
-</center>
+<div align="center">
+<img src="docs/assets/swerex.gif" alt="SWE-ReX in action" width=600px>
+</div>
 
-## Install
+## Get started
 
 ```bash
 pip install swe-rex
