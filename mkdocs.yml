@@ -4,6 +4,7 @@ theme:
   # custom_dir: docs/overrides
   icon:
     repo: fontawesome/brands/github
+    annotation: material/chevron-right-circle
   logo: assets/swerex_no_text.svg
   favicon: assets/swerex_no_text.svg
   palette:

@@ -37,7 +37,7 @@ class DummyRuntime(AbstractRuntime):
         logger: logging.Logger | None = None,
         **kwargs: Any,
     ):
-        """This runtime does nothing.
+        """This runtime returns blank or predefined outputs.
         Useful for testing.
 
         Args:

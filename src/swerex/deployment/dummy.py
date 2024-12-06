@@ -13,7 +13,7 @@ from swerex.utils.log import get_logger
 
 class DummyDeployment(AbstractDeployment):
     def __init__(self, *, logger: logging.Logger | None = None, **kwargs: Any):
-        """This deployment does nothing.
+        """This deployment returns blank or predefined outputs.
         Useful for testing.
 
         Args:

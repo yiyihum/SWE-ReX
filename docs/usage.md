@@ -5,7 +5,11 @@ Here are a few examples of how to use SWE-ReX.
 ## Hello world from your own machine
 
 !!! warning
-    This will run commands on your local machine _without_ any sandboxing, so don't `rm -rf /`!
+    This first example will run commands on your local machine _without_ any sandboxing, so don't `rm -rf /`!
+    Wait for the next example to see how to put it in a sandbox ;) 
+
+!!! note
+    SWE-ReX is inherently asynchronous, so you might want to take a quick look at python's `asyncio` module before continuing (or click the :material-chevron-right-circle: icons in the next example).
 
 ```python
 import asyncio
@@ -15,9 +19,11 @@ from swerex.runtime.abstract import CreateSessionRequest, BashAction, Command
 deployment = LocalDeployment()
 
 async def run_some_stuff(deployment):
-    await deployment.start()
+    """Spoiler: This function will work with any deployment."""
+    await deployment.start()  # (1)!
     runtime = deployment.runtime
-    # Issue a few one-off commands
+
+    # Issue a few one-off commands, similar to `subprocess.run()`
     print(await runtime.execute(Command(command=["echo", "Hello, world!"])))
 
     # Create a bash session
@@ -28,10 +34,16 @@ async def run_some_stuff(deployment):
     print(await runtime.run_in_session(BashAction(command="export MYVAR='test'")))
     print(await runtime.run_in_session(BashAction(command="echo $MYVAR")))
 
-    await deployment.stop()
+    await deployment.stop()  # (2)!
 
-asyncio.run(run_some_stuff(deployment))
+asyncio.run(run_some_stuff(deployment))  # (3)!
 ```
+
+1. In the case of a `LocalDeployment`, this won't do much. However, if you run in a docker container or similar, this will for example pull the container image and start the runtime in it. The `await` will wait until the runtime has been started.
+
+2. Again, this won't do much in the case of a `LocalDeployment`, but it will kill docker containers or similar when used with the appropriate deployment.
+
+3. Since this is an async function, we need to call it with `asyncio.run()` when not running in another async function.
 
 ## Our first "remote" run
 
