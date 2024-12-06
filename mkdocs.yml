@@ -50,10 +50,9 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 nav:
-  - Home: 
-    - index.md
-    - Architecture: architecture.md
-    - Usage: quickstart.md
+  - index.md
+  - Architecture: architecture.md
+  # - Usage: quickstart.md
   - Reference:
     - Deployments:
       - Abstract: api/deployments/abstract.md
