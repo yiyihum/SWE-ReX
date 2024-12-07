@@ -107,6 +107,7 @@ repo_url: https://github.com/SWE-agent/SWE-ReX
 repo_name: SWE-agent/SWE-ReX
 edit_uri: edit/main/docs/
 extra_css:
+  - css/custom.css
   - css/mkdocstrings.css
 extra:
   version:
