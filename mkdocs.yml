@@ -1,4 +1,5 @@
 site_name: SWE-ReX documentation
+site_url: https://swe-rex.com
 theme:
   name: material
   # custom_dir: docs/overrides
