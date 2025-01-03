@@ -31,7 +31,11 @@ def _is_image_available(image: str) -> bool:
 
 
 def _pull_image(image: str) -> bytes:
-    return subprocess.check_output(["docker", "pull", image])
+    try:
+        return subprocess.check_output(["docker", "pull", image], stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        # e.stderr contains the error message as bytes
+        raise subprocess.CalledProcessError(e.returncode, e.cmd, e.output, e.stderr) from None
 
 
 def _remove_image(image: str) -> bytes:
