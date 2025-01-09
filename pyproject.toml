@@ -77,7 +77,7 @@ version = {attr = "swerex.__version__"}
 where = ["src"]
 namespaces = false
 
-# [project.urls]
+[project.urls]
 "Homepage" = "https://swe-rex.com"
 "Bug Reports" = "http://github.com/SWE-agent/SWE-rex/issues"
 "Documentation" = "https://swe-rex.com/latest/"
