@@ -13,6 +13,8 @@ from fastapi.responses import JSONResponse
 from fastapi.security import APIKeyHeader
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from swerex import __version__
+
 from swerex.runtime.abstract import (
     Action,
     CloseResponse,
@@ -138,12 +140,25 @@ async def close():
 def main():
     import uvicorn
 
-    parser = argparse.ArgumentParser(description="Run the SWE-ReX FastAPI server")
+    # First parser just for version checking
+    version_parser = argparse.ArgumentParser(add_help=False)
+    version_parser.add_argument("-v", "--version", action="store_true")
+    version_args, remaining_args = version_parser.parse_known_args()
+
+    if version_args.version:
+        if remaining_args:
+            print("Error: --version cannot be combined with other arguments")
+            exit(1)
+        print(__version__)
+        return
+
+    # Main parser for other arguments
+    parser = argparse.ArgumentParser(description="Run the SWE-ReX server")
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind the server to")
     parser.add_argument("--port", type=int, default=8000, help="Port to run the server on")
     parser.add_argument("--auth-token", default="", help="token to authenticate requests", required=True)
 
-    args = parser.parse_args()
+    args = parser.parse_args(remaining_args)
     global AUTH_TOKEN
     AUTH_TOKEN = args.auth_token
     uvicorn.run(app, host=args.host, port=args.port)
