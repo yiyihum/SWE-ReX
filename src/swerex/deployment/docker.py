@@ -3,6 +3,7 @@ import shlex
 import subprocess
 import time
 import uuid
+import time
 from typing import Any
 
 from typing_extensions import Self
@@ -116,12 +117,16 @@ class DockerDeployment(AbstractDeployment):
     def _get_swerex_start_cmd(self, token: str) -> list[str]:
         rex_args = f"--auth-token {token}"
         pipx_install = "python3 -m pip install pipx && python3 -m pipx ensurepath"
+        if self._config.python_standalone_dir:
+            cmd = f"{self._config.python_standalone_dir}/python3.11/bin/{REMOTE_EXECUTABLE_NAME} {rex_args}"
+        else:
+            cmd = f"{REMOTE_EXECUTABLE_NAME} {rex_args} || ({pipx_install} && pipx run {PACKAGE_NAME} {rex_args})"
         # Need to wrap with /bin/sh -c to avoid having '&&' interpreted by the parent shell
         return [
             "/bin/sh",
             # "-l",
             "-c",
-            f"{REMOTE_EXECUTABLE_NAME} {rex_args} || ({pipx_install} && pipx run {PACKAGE_NAME} {rex_args})",
+            cmd,
         ]
 
     def _pull_image(self) -> None:
@@ -137,9 +142,70 @@ class DockerDeployment(AbstractDeployment):
             msg = f"Failed to pull image {self._config.image}"
             raise DockerPullError(msg) from e
 
+    @property
+    def glibc_dockerfile(self) -> str:
+        # will only work with glibc-based systems
+        text = (
+            "ARG BASE_IMAGE\n\n"
+            
+            # Build stage for standalone Python
+            "FROM python:3.11-slim AS builder\n"
+            
+            # Install build dependencies
+            "RUN apt-get update && apt-get install -y \\\n"
+            "    wget \\\n"
+            "    gcc \\\n"
+            "    make \\\n"
+            "    zlib1g-dev \\\n"
+            "    libssl-dev \\\n"
+            "    && rm -rf /var/lib/apt/lists/*\n\n"
+            
+            # Download and compile Python as standalone
+            "WORKDIR /build\n"
+            "RUN wget https://www.python.org/ftp/python/3.11.8/Python-3.11.8.tgz \\\n"
+            "    && tar xzf Python-3.11.8.tgz\n"
+            "WORKDIR /build/Python-3.11.8\n"
+            "RUN ./configure --prefix=/root/python3.11 --enable-shared \\\n"
+            "    && make -j$(nproc) \\\n"
+            "    && make install\n\n"
+            
+            # Install swe-rex using the standalone Python
+            f"RUN /root/python3.11/bin/pip3 install --no-cache-dir {PACKAGE_NAME}\n\n"
+
+            # Production stage
+            "FROM $BASE_IMAGE\n"
+            
+            # Copy the standalone Python installation
+            f"COPY --from=builder /root/python3.11 {self._config.python_standalone_dir}/python3.11\n"
+            
+            # Append to LD_LIBRARY_PATH instead of overwriting it
+            f"ENV LD_LIBRARY_PATH={self._config.python_standalone_dir}/python3.11/lib:${{LD_LIBRARY_PATH}}\n"
+            
+            # Verify installation
+            f"RUN {self._config.python_standalone_dir}/python3.11/bin/python3 --version\n"
+            # Create symlink to make the executable available in PATH
+            f"RUN {self._config.python_standalone_dir}/python3.11/bin/{REMOTE_EXECUTABLE_NAME} --version\n"
+        )
+        return text
+    
+    def _build_image(self):
+        dockerfile = self.glibc_dockerfile
+        # build docker image without a tag, but get the image id
+        image_id = subprocess.check_output(
+            [
+                "docker", "build", "-q", "--build-arg", f"BASE_IMAGE={self._config.image}", "-",
+            ],
+            input=dockerfile.encode(),
+        ).decode().strip()
+        return image_id
+
     async def start(self):
         """Starts the runtime."""
         self._pull_image()
+        if self._config.python_standalone_dir is not None:
+            image_id = self._build_image()
+        else:
+            image_id = self._config.image
         if self._config.port is None:
             self._config.port = find_free_port()
         assert self._container_name is None
@@ -154,7 +220,7 @@ class DockerDeployment(AbstractDeployment):
             *self._config.docker_args,
             "--name",
             self._container_name,
-            self._config.image,
+            image_id,
             *self._get_swerex_start_cmd(token),
         ]
         cmd_str = shlex.join(cmds)

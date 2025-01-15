@@ -35,7 +35,9 @@ class DockerDeploymentConfig(BaseModel):
     """When to pull docker images."""
     remove_images: bool = False
     """Whether to remove the image after it has stopped."""
-
+    python_standalone_dir: str | None = None
+    """The directory to use for the python standalone."""
+    
     type: Literal["docker"] = "docker"
     """Discriminator for (de)serialization/CLI. Do not change."""
 
@@ -99,7 +101,7 @@ class FargateDeploymentConfig(BaseModel):
     security_group_prefix: str = "swe-rex-deployment-sg"
     fargate_args: dict[str, str] = {}
     container_timeout: float = 60 * 15
-    runtime_timeout: float = 30
+    runtime_timeout: float = 60
 
     type: Literal["fargate"] = "fargate"
     """Discriminator for (de)serialization/CLI. Do not change."""
