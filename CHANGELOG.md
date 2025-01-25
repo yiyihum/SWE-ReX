@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 (01/25/25)
+
+### Added
+
+* Added `encoding` and `error` arguments to `read_file`
+
 ## 1.0.5
 
 ### Fixes
