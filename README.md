@@ -54,3 +54,4 @@ Then head over to [our documentation](https://swe-rex.com/) to learn more!
 
 [SWE-agent]: https://swe-agent.com
 [SWE-bench]: https://swebench.com
+[enigma]: https://enigma-agent.com/
