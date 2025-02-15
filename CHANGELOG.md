@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 (02/15/25)
+
+### Added
+
+* Added `swerex.utils.aws_teardown` utility to clean up AWS resources created by the Fargate deployment
+
 ## 1.1.0 (01/25/25)
 
 ### Added
