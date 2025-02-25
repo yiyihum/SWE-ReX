@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.0 (02/25/25)
+
+### Added
+
+* Add platform flag to Deployment config for docker builds on different platforms by @carlosejimenez in https://github.com/SWE-agent/SWE-ReX/pull/165
+
+### Fixed
+
+* Fix: Avoid exceptions from Deployment.__del__ by @klieret in https://github.com/SWE-agent/SWE-ReX/pull/170
+* Enh: Validate image ID by @klieret in https://github.com/SWE-agent/SWE-ReX/pull/173
+
+**Full Changelog**: https://github.com/SWE-agent/SWE-ReX/compare/v1.1.1...v1.2.0
+
 ## 1.1.1 (02/15/25)
 
 ### Added
