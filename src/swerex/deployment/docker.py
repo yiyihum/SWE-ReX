@@ -278,7 +278,9 @@ class DockerDeployment(AbstractDeployment):
                     timeout=10,
                 )
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
-                self.logger.warning(f"Failed to kill container {self._container_name}: {e}", exc_info=True)
+                self.logger.warning(
+                    f"Failed to kill container {self._container_name}: {e}. Will try harder.", exc_info=False
+                )
             for _ in range(3):
                 self._container_process.kill()
                 try:
