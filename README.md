@@ -1,6 +1,5 @@
 <div align="center">
-
-<a href="https://swe-rex.com"><img src="https://private-user-images.githubusercontent.com/13602468/416860007-3338e89c-802a-4d11-bd73-d7be13e77329.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDA2MDUxODAsIm5iZiI6MTc0MDYwNDg4MCwicGF0aCI6Ii8xMzYwMjQ2OC80MTY4NjAwMDctMzMzOGU4OWMtODAyYS00ZDExLWJkNzMtZDdiZTEzZTc3MzI5LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTAyMjYlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwMjI2VDIxMjEyMFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTE3ZDBiNTM2N2U0ZTE3OGEyMmQ3MDQzZWM4YjhjZjdlNGY0ZTE2OTliY2Y5ZjVhYThlNTIyNzVhOWU4MjdjYjEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.6VNviL6CNN59JgUnvtWvX9CZTZIBF5vupPw0kHWvzXs" alt="SWE-ReX" style="height: 10em"/></a>
+<a href="https://swe-rex.com"><img src="docs/assets/swe-rex-logo-bg.svg" alt="SWE-ReX" style="height: 10em"/></a>
 
 # SWE-agent Remote Execution Framework
 
