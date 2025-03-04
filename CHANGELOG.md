@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.1 (03/04/25)
+
+### Fixed
+
+* `TemporaryDirectory` cleanup issues on Windows in https://github.com/SWE-agent/SWE-ReX/pull/181
+
+### Enhanced
+
+* Message about building docker images in https://github.com/SWE-agent/SWE-ReX/pull/178
+
+**Full Changelog**: https://github.com/SWE-agent/SWE-ReX/compare/v1.2.0...v1.2.1
+
 ## 1.2.0 (02/25/25)
 
 ### Added
