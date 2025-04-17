@@ -226,7 +226,7 @@ class DockerDeployment(AbstractDeployment):
     async def start(self):
         """Starts the runtime."""
         self._pull_image()
-        if self._config.python_standalone_dir is not None:
+        if self._config.python_standalone_dir:
             image_id = self._build_image()
         else:
             image_id = self._config.image
