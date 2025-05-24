@@ -57,7 +57,7 @@ dev = [
     "swe-rex[fargate]",
 ]
 modal = [
-    "modal",
+    "modal>=1.0",
     "boto3",
 ]
 fargate = [
