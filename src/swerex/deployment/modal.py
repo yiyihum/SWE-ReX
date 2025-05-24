@@ -42,11 +42,10 @@ class _ImageBuilder:
             build_context = Path(image).resolve().parent
         build_context = Path(build_context)
         self.logger.debug(f"Using build context {build_context}")
-        context_mount = modal.Mount.from_local_dir(
-            local_path=build_context,
-            remote_path=".",  # to current WORKDIR
+        return modal.Image.from_dockerfile(
+            str(image),
+            context_dir=str(build_context),
         )
-        return modal.Image.from_dockerfile(str(image), context_mount=context_mount)
 
     def from_registry(self, image: str) -> modal.Image:
         self.logger.info(f"Building image from docker registry {image}")
