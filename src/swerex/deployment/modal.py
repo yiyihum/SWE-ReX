@@ -178,10 +178,11 @@ class ModalDeployment(AbstractDeployment):
         """
         if self._runtime is None or self._sandbox is None:
             raise DeploymentNotStartedError()
-        if self._sandbox.poll() is not None:
+        exit_code = await self._sandbox.poll.aio()
+        if exit_code is not None:
             msg = "Container process terminated."
-            output = "stdout:\n" + self._sandbox.stdout.read()  # type: ignore
-            output += "\nstderr:\n" + self._sandbox.stderr.read()  # type: ignore
+            output = "stdout:\n" + await self._sandbox.stdout.read.aio()  # type: ignore
+            output += "\nstderr:\n" + await self._sandbox.stderr.read.aio()  # type: ignore
             msg += "\n" + output
             raise RuntimeError(msg)
         return await self._runtime.is_alive(timeout=timeout)
@@ -197,13 +198,13 @@ class ModalDeployment(AbstractDeployment):
         rex_args = f"--port {self._port} --auth-token {token}"
         return f"{REMOTE_EXECUTABLE_NAME} {rex_args} || pipx run {PACKAGE_NAME} {rex_args}"
 
-    def get_modal_log_url(self) -> str:
+    async def get_modal_log_url(self) -> str:
         """Returns URL to modal logs
 
         Raises:
             DeploymentNotStartedError: If the deployment was not started.
         """
-        return f"https://modal.com/apps/{self._user}/main/deployed/{self.app.name}?activeTab=logs&taskId={self.sandbox._get_task_id()}"
+        return f"https://modal.com/apps/{self._user}/main/deployed/{self.app.name}?activeTab=logs&taskId={await self.sandbox._get_task_id.aio()}"
 
     async def start(
         self,
@@ -213,7 +214,7 @@ class ModalDeployment(AbstractDeployment):
         self._hooks.on_custom_step("Starting modal sandbox")
         t0 = time.time()
         token = self._get_token()
-        self._sandbox = modal.Sandbox.create(
+        self._sandbox = await modal.Sandbox.create.aio(
             "/usr/bin/env",
             "bash",
             "-c",
@@ -224,10 +225,11 @@ class ModalDeployment(AbstractDeployment):
             app=self._app,
             **self._modal_kwargs,
         )
-        tunnel = self._sandbox.tunnels()[self._port]
+        tunnels = await self._sandbox.tunnels.aio()
+        tunnel = tunnels[self._port]
         elapsed_sandbox_creation = time.time() - t0
         self.logger.info(f"Sandbox ({self._sandbox.object_id}) created in {elapsed_sandbox_creation:.2f}s")
-        self.logger.info(f"Check sandbox logs at {self.get_modal_log_url()}")
+        self.logger.info(f"Check sandbox logs at {await self.get_modal_log_url()}")
         self.logger.info(f"Sandbox created with id {self._sandbox.object_id}")
         await asyncio.sleep(1)
         self.logger.info(f"Starting runtime at {tunnel.url}")
@@ -245,8 +247,10 @@ class ModalDeployment(AbstractDeployment):
         if self._runtime is not None:
             await self._runtime.close()
             self._runtime = None
-        if self._sandbox is not None and not self._sandbox.poll():
-            self._sandbox.terminate()
+        if self._sandbox is not None:
+            exit_code = await self._sandbox.poll.aio()
+            if exit_code is not None:
+                await self._sandbox.terminate.aio()
         self._sandbox = None
         self._app = None
 
