@@ -31,8 +31,29 @@ class CreateBashSessionRequest(BaseModel):
     startup_timeout: float = 1.0
     """The timeout for the startup commands."""
 
+class CreateBwrapBashSessionRequest(BaseModel):
+    startup_source: list[str] = []
+    """Source the following files before running commands."""
+    
+    session: str = "default"
+    session_type: Literal["bwrap_bash"] = "bwrap_bash"
+    startup_timeout: float = 1.0
+    
+    # Bwrap 特定配置
+    bwrap_args: list[str] = []
+    """Additional bwrap arguments for sandboxing."""
+    
+    bind_paths: dict[str, str] = {}
+    """Paths to bind mount: {host_path: container_path}"""
+    
+    readonly_paths: list[str] = []
+    """Paths to mount as read-only."""
 
-CreateSessionRequest = Annotated[CreateBashSessionRequest, Field(discriminator="session_type")]
+
+CreateSessionRequest = Annotated[
+    CreateBashSessionRequest | CreateBwrapBashSessionRequest, 
+    Field(discriminator="session_type")
+]
 """Union type for all create session requests. Do not use this directly."""
 
 
@@ -42,8 +63,14 @@ class CreateBashSessionResponse(BaseModel):
 
     session_type: Literal["bash"] = "bash"
 
+class CreateBwrapBashSessionResponse(BaseModel):
+    output: str = ""
+    session_type: Literal["bwrap_bash"] = "bwrap_bash"
 
-CreateSessionResponse = Annotated[CreateBashSessionResponse, Field(discriminator="session_type")]
+CreateSessionResponse = Annotated[
+    CreateBashSessionResponse | CreateBwrapBashSessionResponse,
+    Field(discriminator="session_type")
+]
 """Union type for all create session responses. Do not use this directly."""
 
 
@@ -127,16 +154,28 @@ class CloseBashSessionRequest(BaseModel):
     session: str = "default"
     session_type: Literal["bash"] = "bash"
 
+class CloseBwrapBashSessionRequest(BaseModel):
+    session: str = "default"
+    session_type: Literal["bwrap_bash"] = "bwrap_bash"
 
-CloseSessionRequest = Annotated[CloseBashSessionRequest, Field(discriminator="session_type")]
+
+CloseSessionRequest = Annotated[
+    CloseBashSessionRequest | CloseBwrapBashSessionRequest,
+    Field(discriminator="session_type")
+]
 """Union type for all close session requests. Do not use this directly."""
 
 
 class CloseBashSessionResponse(BaseModel):
     session_type: Literal["bash"] = "bash"
 
+class CloseBwrapBashSessionResponse(BaseModel):
+    session_type: Literal["bwrap_bash"] = "bwrap_bash"
 
-CloseSessionResponse = Annotated[CloseBashSessionResponse, Field(discriminator="session_type")]
+CloseSessionResponse = Annotated[
+    CloseBashSessionResponse | CloseBwrapBashSessionResponse,
+    Field(discriminator="session_type")
+]
 """Union type for all close session responses. Do not use this directly."""
 
 
