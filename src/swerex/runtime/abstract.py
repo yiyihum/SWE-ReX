@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
+from typing import Optional, List
 
 
 class IsAliveResponse(BaseModel):
@@ -38,16 +39,14 @@ class CreateBwrapBashSessionRequest(BaseModel):
     session: str = "default"
     session_type: Literal["bwrap_bash"] = "bwrap_bash"
     startup_timeout: float = 1.0
-    
-    # Bwrap 特定配置
-    bwrap_args: list[str] = []
-    """Additional bwrap arguments for sandboxing."""
-    
-    bind_paths: dict[str, str] = {}
-    """Paths to bind mount: {host_path: container_path}"""
-    
-    readonly_paths: list[str] = []
-    """Paths to mount as read-only."""
+
+    # Bwrap specific options
+    bind_paths: Optional[List[tuple[str, str]]] = None  # [(host_path, container_path), ...]
+    ro_bind_paths: Optional[List[tuple[str, str]]] = None  # Read-only binds
+    tmpfs_paths: Optional[List[str]] = None  # Temporary filesystems
+    unshare_net: bool = True  # Disable network
+    unshare_pid: bool = True  # New PID namespace
+    # working_dir: str = "/tmp"  # Working directory inside sandbox
 
 
 CreateSessionRequest = Annotated[
