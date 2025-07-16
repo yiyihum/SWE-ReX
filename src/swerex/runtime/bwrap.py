@@ -137,12 +137,6 @@ class BwrapBashSession(BashSession):
 
         return CreateBwrapBashSessionResponse(output=output)
 
-
-    async def run(self, action: BashAction | BashInterruptAction) -> BashObservation:
-        if isinstance(action, BashAction):
-            await self._handle_mix_copy(action)
-        return await super().run(action)
-
     async def close(self) -> CloseSessionResponse:
         """Close the bwrap session."""
         if self._shell is None:
