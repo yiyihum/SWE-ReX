@@ -47,15 +47,11 @@ from swerex.runtime.abstract import (
     UploadResponse,
     WriteFileRequest,
     WriteFileResponse,
-    CreateBwrapBashSessionRequest,
-    CreateBwrapBashSessionResponse,
-    CloseBwrapBashSessionRequest,
-    CloseBwrapBashSessionResponse,
 )
 from swerex.runtime.config import LocalRuntimeConfig
 from swerex.utils.log import get_logger
 
-__all__ = ["LocalRuntime", "BashSession", "BwrapBashSession"]
+__all__ = ["LocalRuntime", "BashSession"]
 
 
 def _split_bash_command(inpt: str) -> list[str]:
@@ -363,125 +359,6 @@ class BashSession(Session):
         """Enter interactive mode."""
         self.shell.interact()
 
-# In swerex/runtime/local.py, add this class after BashSession
-
-class BwrapBashSession(BashSession):
-    """A bash session that runs inside a bubblewrap sandbox."""
-    
-    def __init__(self, request: CreateBwrapBashSessionRequest, *, logger: logging.Logger | None = None):
-        # Initialize parent with a converted request
-        bash_request = CreateBashSessionRequest(
-            startup_source=request.startup_source,
-            session=request.session,
-            session_type="bash",  # This is for the parent class
-            startup_timeout=request.startup_timeout
-        )
-        super().__init__(bash_request, logger=logger)
-        self.bwrap_request = request
-        
-    def _build_bwrap_command(self) -> list[str]:
-        """Build the bwrap command with all the necessary options."""
-        cmd = ["bwrap"]
-        cmd.extend( ["--tmpfs", "/root","--setenv", "HOME", "/root"] )
-        
-        # Basic setup - always bind /usr, /bin, /lib, /lib64 for basic functionality
-        basic_binds = [
-        ("--ro-bind", "/usr", "/usr"),
-        ("--ro-bind", "/bin", "/bin"),
-        ("--ro-bind", "/lib", "/lib"),
-        # Entries originally like ("/path", "/path") are interpreted as "--ro-bind" for system directories
-        ("--ro-bind", "/bin/bash", "/bin/bash"),        # Original: ("/bin/bash", "/bin/bash")
-        ("--ro-bind", "/bin", "/bin"),                  # Original: ("/bin", "/bin")
-        ("--ro-bind", "/usr/bin", "/usr/bin"),          # Original: ("/usr/bin", "/usr/bin")
-        ("--ro-bind", "/usr/local/bin", "/usr/local/bin"), # Original: ("/usr/local/bin", "/usr/local/bin")
-        ("--ro-bind", "/lib", "/lib"),                  # Original: ("/lib", "/lib")
-        ("--ro-bind", "/usr/lib", "/usr/lib"),          # Original: ("/usr/lib", "/usr/lib")
-        ("--ro-bind", "/lib64", "/lib64"),              # Original: ("/lib64", "/lib64")
-        ("--ro-bind", "/sbin", "/sbin"),                # Original: ("/sbin", "/sbin")
-        # Conditional entries
-        ("--ro-bind", "/lib64", "/lib64") if Path("/lib64").exists() else None,
-        ("--ro-bind", "/etc/alternatives", "/etc/alternatives") if Path("/etc/alternatives").exists() else None,
-        ]       
-        
-                # Add read-only bind mounts
-        if self.bwrap_request.ro_bind_paths:
-            for host_path, container_path in self.bwrap_request.ro_bind_paths:
-                cmd.extend(["--ro-bind", host_path, container_path])
-
-        for bind in basic_binds:
-            if bind:
-                cmd.extend(bind)
-        
-        # Process namespace options
-        if self.bwrap_request.unshare_net:
-            cmd.append("--unshare-net")
-        if self.bwrap_request.unshare_pid:
-            cmd.append("--unshare-pid")
-            
-        # Add custom bind mounts
-        if self.bwrap_request.bind_paths:
-            for host_path, container_path in self.bwrap_request.bind_paths:
-                cmd.extend(["--bind", host_path, container_path])
-                
-        # Add tmpfs mounts
-        if self.bwrap_request.tmpfs_paths:
-            for tmpfs_path in self.bwrap_request.tmpfs_paths:
-                cmd.extend(["--tmpfs", tmpfs_path])
-        # else:
-        #     # Default tmpfs for /tmp
-        #     cmd.extend(["--tmpfs", "/tmp"])
-            
-        # Set working directory
-        # cmd.extend(["--chdir", self.bwrap_request.working_dir])
-        
-        # Add /dev bindings for basic functionality
-        cmd.extend([
-            "--dev", "/dev",
-            # "--proc", "/proc",
-        ])
-        
-        # Finally, add the bash command
-        cmd.extend(["/usr/bin/env", "bash", "--norc", "--noprofile"])
-        
-        return cmd
-    
-    async def start(self) -> CreateBwrapBashSessionResponse:
-        """Spawn the session inside a bwrap sandbox."""
-        # Build the bwrap command
-        bwrap_cmd = self._build_bwrap_command()
-        
-        # Spawn the bwrap-wrapped bash shell
-        self._shell = pexpect.spawn(
-            bwrap_cmd[0],
-            args=bwrap_cmd[1:],
-            encoding="utf-8",
-            codec_errors="backslashreplace",
-            echo=False,
-            env={"PS1": self._ps1, "PS2": "", "PS0": ""},  # type: ignore
-        )
-        
-        time.sleep(0.3)
-        
-        # Set up the shell environment
-        cmds = []
-        if self.request.startup_source:
-            cmds += [f"source {path}" for path in self.request.startup_source] + ["sleep 0.3"]
-        cmds += self._get_reset_commands()
-        cmd = " ; ".join(cmds)
-        
-        self.shell.sendline(cmd)
-        self.shell.expect(self._ps1, timeout=self.request.startup_timeout)
-        output = _strip_control_chars(self.shell.before)  # type: ignore
-        
-        return CreateBwrapBashSessionResponse(output=output)
-    
-    async def close(self) -> CloseSessionResponse:
-        """Close the bwrap session."""
-        if self._shell is None:
-            return CloseBwrapBashSessionResponse()
-        self.shell.close()
-        self._shell = None
-        return CloseBwrapBashSessionResponse()
 
 class LocalRuntime(AbstractRuntime):
     def __init__(self, *, logger: logging.Logger | None = None, **kwargs: Any):
@@ -515,8 +392,6 @@ class LocalRuntime(AbstractRuntime):
             raise SessionExistsError(msg)
         if isinstance(request, CreateBashSessionRequest):
             session = BashSession(request)
-        elif isinstance(request, CreateBwrapBashSessionRequest):
-            session= BwrapBashSession(request)
         else:
             msg = f"unknown session type: {request!r}"
             raise ValueError(msg)

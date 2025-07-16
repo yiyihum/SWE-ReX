@@ -20,6 +20,20 @@ class LocalDeploymentConfig(BaseModel):
         return LocalDeployment.from_config(self)
 
 
+class BwrapDeploymentConfig(BaseModel):
+    """Configuration for running with bwrap."""
+
+    type: Literal["bwrap"] = "bwrap"
+    """Discriminator for (de)serialization/CLI. Do not change."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    def get_deployment(self) -> AbstractDeployment:
+        from swerex.deployment.bwrap import BwrapDeployment
+
+        return BwrapDeployment.from_config(self)
+
+
 class DockerDeploymentConfig(BaseModel):
     """Configuration for running locally in a Docker container."""
 
@@ -192,6 +206,7 @@ DeploymentConfig = (
     | FargateDeploymentConfig
     | RemoteDeploymentConfig
     | DummyDeploymentConfig
+    | BwrapDeploymentConfig
 )
 """Union of all deployment configurations. Useful for type hints."""
 
